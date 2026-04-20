@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
@@ -40,6 +42,17 @@ const INITIAL_FORM: FormData = {
   program: "", existingFunding: "", heardFrom: "",
   pitchDeck: null, additionalInfo: "",
 };
+
+/*
+ * Maps URL slug → exact <option> string in the Step 3 dropdown.
+ * Null-safe: an unknown or missing slug simply leaves program as "".
+ */
+const PROGRAM_SLUG_MAP: Record<string, string> = {
+  "nidhi-eir":        "NIDHI EIR (Pre-Incubation)",
+  "core-incubation":  "Core Incubation",
+  "bizzness":         "BIZZNESS Student Program",
+};
+
 
 /* ─── Shared input classNames ────────────────────────────────────────── */
 
@@ -328,11 +341,38 @@ function SuccessScreen() {
 
 const TOTAL_STEPS = 3;
 
-export default function MultiStepForm() {
+/* ─── Inner component (reads useSearchParams) ────────────────────────── */
+/*
+ * Next.js 15+ App Router: any component that calls useSearchParams must be
+ * wrapped in <Suspense> to avoid de-optimising (blocking) the entire page
+ * during the static build/pre-render phase.
+ * We isolate the hook here and export a thin Suspense-wrapped shell below.
+ */
+function FormContent() {
+  const searchParams   = useSearchParams();
   const [currentStep,  setCurrentStep]  = useState(1);
   const [formData,     setFormData]     = useState<FormData>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess,    setIsSuccess]    = useState(false);
+
+  /*
+   * On first render, read the ?program=<slug> query parameter and pre-select
+   * the matching dropdown option.
+   *
+   * Edge cases handled:
+   *   - null param  → no crash, program stays ""
+   *   - unknown slug → no crash, program stays ""
+   *   - valid slug   → maps to exact <option> string via PROGRAM_SLUG_MAP
+   */
+  useEffect(() => {
+    const slug  = searchParams.get("program");
+    const value = slug ? (PROGRAM_SLUG_MAP[slug] ?? "") : "";
+    if (value) {
+      setFormData((prev) => ({ ...prev, program: value }));
+    }
+  /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []); // run once on mount — intentionally ignores searchParams updates
+
 
   /* ── Field updater ── */
   const update = (key: keyof FormData, value: string) =>
@@ -423,5 +463,27 @@ export default function MultiStepForm() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ─── Public export — Suspense boundary ─────────────────────────────── */
+/*
+ * Wrapping FormContent in Suspense satisfies Next.js's requirement:
+ * components using useSearchParams must not suspend the entire page tree.
+ * The skeleton fallback matches the form card's approximate height so the
+ * layout doesn't shift when the real form hydrates.
+ */
+export default function MultiStepForm() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 pb-16">
+          <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 md:p-12
+                          animate-pulse min-h-[420px]" />
+        </div>
+      }
+    >
+      <FormContent />
+    </Suspense>
   );
 }

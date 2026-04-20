@@ -5,45 +5,45 @@ import { defineField, defineType } from "sanity";
  * Each entry maps to a card in the "Meet Our Core Team" section on /about.
  */
 export const teamSchema = defineType({
-  name:  "teamMember",
+  name: "teamMember",
   title: "Team Member",
-  type:  "document",
+  type: "document",
   fields: [
     defineField({
-      name:       "name",
-      title:      "Full Name",
-      type:       "string",
+      name: "name",
+      title: "Full Name",
+      type: "string",
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name:       "role",
-      title:      "Designation / Role",
-      type:       "string",
+      name: "role",
+      title: "Designation / Role",
+      type: "string",
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name:       "bio",
-      title:      "Short Bio",
-      type:       "text",
-      rows:       3,
-      validation: (Rule) => Rule.max(150),
+      name: "bio",
+      title: "Short Bio",
+      type: "text",
+      rows: 5,
+      validation: (Rule) => Rule.max(500),
     }),
     defineField({
-      name:    "photo",
-      title:   "Profile Photo",
-      type:    "image",
+      name: "photo",
+      title: "Profile Photo",
+      type: "image",
       options: { hotspot: true },
     }),
     defineField({
-      name:  "linkedinUrl",
+      name: "linkedinUrl",
       title: "LinkedIn Profile URL",
-      type:  "url",
+      type: "url",
     }),
     defineField({
-      name:         "order",
-      title:        "Display Order",
-      type:         "number",
-      description:  "Lower numbers appear first (e.g., CEO = 1)",
+      name: "order",
+      title: "Display Order",
+      type: "number",
+      description: "Lower numbers appear first (e.g., CEO = 1)",
       initialValue: 99,
     }),
   ],
@@ -51,16 +51,16 @@ export const teamSchema = defineType({
   orderings: [
     {
       title: "Display Order",
-      name:  "orderAsc",
-      by:    [{ field: "order", direction: "asc" }],
+      name: "orderAsc",
+      by: [{ field: "order", direction: "asc" }],
     },
   ],
 
   preview: {
     select: {
-      title:    "name",
+      title: "name",
       subtitle: "role",
-      media:    "photo",
+      media: "photo",
     },
   },
 });

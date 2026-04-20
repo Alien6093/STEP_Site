@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Mail, Linkedin, Twitter, Instagram } from "lucide-react";
 import { motion } from "framer-motion";
+
 
 /* ─── Data ────────────────────────────────────────────────────────────── */
 
@@ -58,6 +60,45 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
+/*
+ * ObfuscatedEmail — bot-proof email display.
+ *
+ * Strategy: user and domain are stored as two separate string constants.
+ * They are NEVER concatenated in the SSR/static HTML payload — scrapers
+ * reading the raw markup cannot harvest a full email address.
+ * The mailto: href is constructed client-side only on first interaction
+ * (onMouseEnter / onFocus), stored in React state, and inserted lazily.
+ *
+ * Visible text is rendered as two adjacent <span>s so it reads naturally
+ * to human eyes while remaining two distinct DOM text nodes for scrapers.
+ */
+const EMAIL_USER   = "info";
+const EMAIL_DOMAIN = "jssstepnoida.org";
+
+function ObfuscatedEmail({ className }: { className?: string }) {
+  const [href, setHref] = useState<string | undefined>(undefined);
+
+  const reveal = () => {
+    if (!href) setHref(`mailto:${EMAIL_USER}@${EMAIL_DOMAIN}`);
+  };
+
+  return (
+    <a
+      href={href}                   /* undefined until interaction — never in SSR HTML */
+      onMouseEnter={reveal}
+      onFocus={reveal}
+      onClick={reveal}              /* fallback for keyboard-only users */
+      className={className}
+      aria-label={`Email us at ${EMAIL_USER} at ${EMAIL_DOMAIN}`}
+    >
+      {/* Two adjacent spans — reads as one address to humans, two tokens to bots */}
+      <span>{EMAIL_USER}</span>
+      <span>&#64;{EMAIL_DOMAIN}</span>
+    </a>
+  );
+}
+
+
 /* ─── Footer ──────────────────────────────────────────────────────────── */
 
 export default function Footer() {
@@ -80,10 +121,11 @@ export default function Footer() {
                 src="/jss-step-logo.jpg"
                 alt="JSS STEP Logo"
                 fill
-                sizes="(max-width: 768px) 100vw, 200px"
+                sizes="176px"
                 className="object-contain mix-blend-multiply"
               />
             </div>
+
 
             <p className="text-sm text-slate-500 leading-relaxed max-w-xs">
               DST‑supported Technology Business Incubator empowering deep‑tech startups
@@ -101,13 +143,9 @@ export default function Footer() {
 
             <div className="flex items-center gap-2 text-slate-500">
               <Mail size={15} className="shrink-0 text-slate-400" />
-              <a
-                href="mailto:info@jssstepnoida.org"
-                className="text-sm hover:text-cyan-600 transition-colors"
-              >
-                info@jssstepnoida.org
-              </a>
+              <ObfuscatedEmail className="text-sm hover:text-cyan-600 transition-colors" />
             </div>
+
           </div>
 
           {/* Col 2 — Quick Links */}
@@ -155,8 +193,11 @@ export default function Footer() {
                      items-center justify-between gap-4"
         >
           <p className="text-sm text-slate-400">
-            &copy; {new Date().getFullYear()} JSS STEP. All rights reserved.
+            &copy;{" "}
+            <span suppressHydrationWarning>{new Date().getFullYear()}</span>
+            {" "}JSS STEP. All rights reserved.
           </p>
+
 
           <div className="flex items-center gap-4">
             {SOCIAL.map(({ label, href, Icon }) => (

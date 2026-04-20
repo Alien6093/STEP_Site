@@ -18,6 +18,13 @@ export const metadata: Metadata = {
 
 const PROGRAMS = [
   {
+    /*
+     * id        — used as the anchor fragment: /programs#nidhi-eir
+     * applyLink — passes the slug as a query param so the Apply form
+     *             can pre-select the correct program dropdown on Step 3.
+     */
+    id:        "nidhi-eir",
+    applyLink: "/apply?program=nidhi-eir",
     title: "NIDHI EIR",
     tagline:
       "The Entrepreneur-in-Residence program connects researchers and innovators with grant funding and structured mentorship to validate their deep-tech ideas.",
@@ -32,6 +39,8 @@ const PROGRAMS = [
     ],
   },
   {
+    id:        "core-incubation",
+    applyLink: "/apply?program=core-incubation",
     title: "Core Incubation",
     tagline:
       "Our flagship incubation program provides deep-tech startups with everything needed to build, validate, and scale — from lab access to investor introductions.",
@@ -47,6 +56,8 @@ const PROGRAMS = [
     ],
   },
   {
+    id:        "bizzness",
+    applyLink: "/apply?program=bizzness",
     title: "BIZZNESS Student Program",
     tagline:
       "Designed for undergraduate and postgraduate students with entrepreneurial ambitions — a 6-month intensive to validate your idea and build a founding team.",
@@ -61,6 +72,8 @@ const PROGRAMS = [
     ],
   },
 ] satisfies {
+  id: string;
+  applyLink: string;
   title: string;
   tagline: string;
   duration: string;
@@ -91,8 +104,23 @@ export default function ProgramsPage() {
           </ScrollFadeIn>
 
           {PROGRAMS.map((program, i) => (
-            <ScrollFadeIn key={program.title} delay={i * 0.1}>
-              <ProgramCard {...program} />
+            <ScrollFadeIn key={program.id} delay={i * 0.1}>
+              {/*
+               * id          — enables deep-link anchors: /programs#nidhi-eir
+               * scroll-mt-24 — offsets the fixed navbar (h-16/72px) so the
+               *               section title is never hidden under the bar when
+               *               the browser jumps to the anchor.
+               */}
+              <div id={program.id} className="scroll-mt-24">
+                <ProgramCard
+                  title={program.title}
+                  tagline={program.tagline}
+                  duration={program.duration}
+                  funding={program.funding}
+                  benefits={program.benefits as string[]}
+                  link={program.applyLink}
+                />
+              </div>
             </ScrollFadeIn>
           ))}
         </div>

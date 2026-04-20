@@ -46,18 +46,50 @@ function DesktopDropdown({ label, items }: { label: string; items: NavItem[] }) 
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  /*
+   * Tab-away close: fires when focus leaves any element inside the container.
+   * relatedTarget is the element receiving focus — if it is outside our ref
+   * the user has tabbed away and we must close the dropdown.
+   * We use onBlur (bubbles) on the wrapper div so it catches blur from both
+   * the trigger button and any <Link> inside the panel.
+   */
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (ref.current && !ref.current.contains(e.relatedTarget as Node | null)) {
+      setOpen(false);
+    }
+  };
+
+  /*
+   * Keyboard handler on the trigger button:
+   *   Enter / Space — toggle the dropdown (matches button default for Enter,
+   *                   but Space is not fired by default on <button> for toggles)
+   *   Escape        — close and return focus to the trigger
+   */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setOpen((v) => !v);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+    }
+  };
+
   return (
     <div
       ref={ref}
       className="relative"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
+      onBlur={handleBlur}
     >
       {/* Trigger */}
       <button
         aria-haspopup="true"
         aria-expanded={open}
+        aria-controls={`dropdown-${label.toLowerCase()}`}
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={handleKeyDown}
         className="flex items-center gap-1 py-2 text-sm font-medium
                    text-slate-700 hover:text-cyan-600 transition-colors duration-200"
       >
@@ -72,6 +104,9 @@ function DesktopDropdown({ label, items }: { label: string; items: NavItem[] }) 
       <AnimatePresence>
         {open && (
           <motion.div
+            id={`dropdown-${label.toLowerCase()}`}
+            role="menu"
+            aria-label={`${label} submenu`}
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
@@ -84,6 +119,7 @@ function DesktopDropdown({ label, items }: { label: string; items: NavItem[] }) 
               <Link
                 key={item.href}
                 href={item.href}
+                role="menuitem"
                 onClick={() => setOpen(false)}
                 className="block px-4 py-2.5 text-sm text-slate-600
                            hover:text-cyan-600 hover:bg-cyan-50
@@ -98,6 +134,7 @@ function DesktopDropdown({ label, items }: { label: string; items: NavItem[] }) 
     </div>
   );
 }
+
 
 /* ─────────────────────────────────────────────────────────────────────── */
 /* Mobile Accordion Item                                                   */
@@ -173,10 +210,16 @@ export default function Navbar() {
   const scrollY = useScrollPosition();
   const scrolled = scrollY > 20;
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [mobileOpen,       setMobileOpen]       = useState(false);
+  const [isAuthenticated,  setIsAuthenticated]  = useState(false);
+  const [user,             setUser]             = useState<SupabaseUser | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  /**
+   * loading: true until the first Supabase session resolution.
+   * Prevents a flash of the "Register" button for authenticated users
+   * and ensures we never get stuck in an indefinite loading state.
+   */
+  const [loading, setLoading] = useState(true);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
@@ -187,23 +230,58 @@ export default function Navbar() {
     router.refresh();
   }, [supabase, router, closeMobile]);
 
-  /* ── Sync auth state on mount and on session changes ── */
+  /* ── Sync auth state on mount and on session changes ────────────── */
   useEffect(() => {
-    /* Set initial state from current session */
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-      setUser(session?.user ?? null);
-    });
+    /*
+     * isMounted prevents setState being called after the component unmounts
+     * (e.g. user navigates away before getSession() resolves — race condition).
+     */
+    let isMounted = true;
 
-    /* Keep state in sync: login, logout, token refresh etc. */
+    /* ── Step 1: seed the initial state from the cached session ── */
+    const seedInitialState = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (isMounted) {
+          setIsAuthenticated(!!session);
+          setUser(session?.user ?? null);
+        }
+      } catch (err) {
+        /* Network timeout, missing env vars, etc. — degrade gracefully */
+        console.warn("[Navbar] getSession failed:", err);
+        if (isMounted) {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } finally {
+        /*
+         * CRITICAL: always runs — even on error or timeout.
+         * This is the only place that sets loading to false.
+         * Without this, a Supabase failure would leave the Navbar
+         * permanently in a loading skeleton indefinitely.
+         */
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    seedInitialState();
+
+    /* ── Step 2: subscribe to live session changes ── */
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!isMounted) return;
         setIsAuthenticated(!!session);
         setUser(session?.user ?? null);
+        /* Ensure loading is cleared even if onAuthStateChange fires first */
+        setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    /* Cleanup: unsubscribe listener + prevent stale setState */
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
   return (
@@ -229,12 +307,13 @@ export default function Navbar() {
                 src="/jss-step-logo.jpg"
                 alt="JSS STEP Logo"
                 fill
-                sizes="(max-width: 768px) 100vw, 208px"
+                sizes="192px"
                 className="object-contain mix-blend-multiply"
                 priority
               />
             </div>
           </Link>
+
 
           {/* ── Desktop nav — centred absolutely ── */}
           <nav
@@ -287,7 +366,10 @@ export default function Navbar() {
 
             {/* Desktop auth — comes AFTER Apply Now */}
             <div className="hidden md:flex items-center">
-              {isAuthenticated ? (
+              {loading ? (
+                /* Neutral skeleton — prevents flash of wrong auth state */
+                <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" aria-hidden="true" />
+              ) : isAuthenticated ? (
                 <UserDropdown user={user} />
               ) : (
                 <button
@@ -385,7 +467,12 @@ export default function Navbar() {
 
 
               {/* Auth */}
-              {!isAuthenticated ? (
+              {loading ? (
+                /* Skeleton during auth resolution — prevents layout jump */
+                <div className="py-4 px-6 border-b border-slate-100">
+                  <div className="h-5 w-32 bg-slate-100 rounded animate-pulse" aria-hidden="true" />
+                </div>
+              ) : !isAuthenticated ? (
                 <button
                   onClick={() => { closeMobile(); setIsLoginModalOpen(true); }}
                   className="flex items-center gap-2 py-4 px-6 text-lg font-medium

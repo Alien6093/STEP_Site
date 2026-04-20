@@ -8,7 +8,8 @@ const PARTNERS = [
   { name: "DST",                 abbr: "DST" },
   { name: "Startup India",       abbr: "STARTUP INDIA" },
   { name: "NIDHI PRAYAS",        abbr: "NIDHI PRAYAS" },
-  { name: "JSS Mahavidyapeetha", abbr: "JSSPEETHA" },
+  { name: "JSS Mahavidyapeetha", abbr: "JSS Mahavidyapeetha" },
+
   { name: "MSME",                abbr: "MSME" },
   { name: "ASSOCHAM",            abbr: "ASSOCHAM" },
 ];
