@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, Coins, Microscope, Briefcase, Scale, MapPin, type LucideIcon } from "lucide-react";
+import { Award, Coins, Briefcase, type LucideIcon } from "lucide-react";
 import SectionHeading from "@/components/shared/SectionHeading";
 import ScrollFadeIn from "@/components/shared/ScrollFadeIn";
 
@@ -20,28 +20,10 @@ const REASONS: { icon: LucideIcon; title: string; description: string }[] = [
       "Access to seed support up to ₹50 Lakhs for prototyping, market entry, and commercialization.",
   },
   {
-    icon: Microscope,
-    title: "World-Class Labs",
-    description:
-      "18,000 sq. ft. facility with co-working spaces, PLM Competency Centre, and advanced manufacturing labs.",
-  },
-  {
     icon: Briefcase,
     title: "Elite Mentorship",
     description:
       "1-on-1 guidance from IIT alumni, industry veterans, and global CEOs.",
-  },
-  {
-    icon: Scale,
-    title: "IP & Legal Support",
-    description:
-      "End-to-end assistance with company formation, patents, and legal compliance.",
-  },
-  {
-    icon: MapPin,
-    title: "Strategic NCR Location",
-    description:
-      "Situated in the heart of Noida's IT hub inside the lush 28-acre JSSATEN campus.",
   },
 ];
 

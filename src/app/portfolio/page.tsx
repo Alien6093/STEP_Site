@@ -1,137 +1,79 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import { useState, useMemo } from "react";
-import { SearchX } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-
+import { client } from "@/sanity/client";
+import { urlFor } from "@/sanity/image";
+import type { Startup } from "@/lib/data/startups";
 import PortfolioHero from "@/components/portfolio/PortfolioHero";
-import FilterBar from "@/components/portfolio/FilterBar";
-import StartupCard from "@/components/portfolio/StartupCard";
-import ScrollFadeIn from "@/components/shared/ScrollFadeIn";
-import { startupsData } from "@/lib/data/startups";
+import PortfolioGrid from "@/components/portfolio/PortfolioGrid";
 
-/* ─── Card animation variants ────────────────────────────────────────── */
-
-const cardVariants = {
-  hidden:  { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] as const },
-  }),
-  exit: { opacity: 0, scale: 0.97, transition: { duration: 0.2 } },
+export const metadata = {
+  title:       "Portfolio — JSS STEP",
+  description: "Deep-tech startups incubated and accelerated by JSS STEP.",
 };
 
-/* ─── Page ───────────────────────────────────────────────────────────── */
+/* ─── GROQ query ──────────────────────────────────────────────────────── */
 
-export default function PortfolioPage() {
-  /* ── Filter state ── */
-  const [searchTerm,      setSearchTerm]      = useState("");
-  const [selectedSector,  setSelectedSector]  = useState("All Sectors");
-  const [selectedStage,   setSelectedStage]   = useState("All Stages");
+const PORTFOLIO_QUERY = `
+  *[_type == "portfolio"] | order(cohortYear desc) {
+    _id,
+    startupName,
+    "slug": slug.current,
+    founderNames,
+    sector,
+    description,
+    logo,
+    websiteUrl,
+    status,
+    cohortYear,
+    isFeatured
+  }
+`;
 
-  /* ── Derived filtered list (memoised) ── */
-  const filteredStartups = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
+/* ─── Sanity result type ──────────────────────────────────────────────── */
 
-    return startupsData.filter((startup) => {
-      const matchesSearch =
-        !query ||
-        startup.name.toLowerCase().includes(query) ||
-        startup.founders.toLowerCase().includes(query) ||
-        startup.sector.toLowerCase().includes(query) ||
-        startup.description.toLowerCase().includes(query);
+interface SanityStartup {
+  _id:          string;
+  startupName:  string;
+  slug:         string;
+  founderNames: string | null;
+  sector:       string | null;
+  description:  string | null;
+  logo:         { asset: { _ref: string } } | null;
+  websiteUrl:   string | null;
+  status:       "Active" | "Acquired" | "Alumni" | "Dead" | null;
+  cohortYear:   number | null;
+  isFeatured?:  boolean;          // optional — false/undefined on existing docs
+}
 
-      const matchesSector =
-        selectedSector === "All Sectors" || startup.sector === selectedSector;
+/* ─── Page ────────────────────────────────────────────────────────────── */
 
-      const matchesStage =
-        selectedStage === "All Stages" || startup.stage === selectedStage;
+export default async function PortfolioPage() {
+  const sanityData = await client.fetch<SanityStartup[]>(
+    PORTFOLIO_QUERY,
+    {},
+    { cache: "no-store" }               // always fetch fresh data
+  );
 
-      return matchesSearch && matchesSector && matchesStage;
-    });
-  }, [searchTerm, selectedSector, selectedStage]);
+  /* Map Sanity shape → existing Startup type used by StartupCard */
+  const startups: Startup[] = sanityData.map((item) => ({
+    id:          item._id,
+    name:        item.startupName,
+    slug:        item.slug ?? "",
+    founders:    item.founderNames ?? "—",
+    sector:      item.sector       ?? "Other",
+    description: item.description  ?? "",
+    website:     item.websiteUrl   ?? "",
+    stage:       (item.status ?? "Active") as Startup["stage"],
+    cohortYear:  item.cohortYear != null ? String(item.cohortYear) : String(new Date().getFullYear()),
+    logo:        item.logo
+      ? urlFor(item.logo).width(120).height(120).fit("crop").url()
+      : null,
+  }));
 
-  /* ── Render ── */
   return (
     <div className="w-full">
       <PortfolioHero />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
-        {/* Filter bar */}
-        <ScrollFadeIn>
-          <FilterBar
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedSector={selectedSector}
-            setSelectedSector={setSelectedSector}
-            selectedStage={selectedStage}
-            setSelectedStage={setSelectedStage}
-          />
-        </ScrollFadeIn>
-
-        {/* Result count */}
-        <p className="text-sm text-slate-400 mb-6">
-          Showing{" "}
-          <span className="font-semibold text-slate-700">{filteredStartups.length}</span>{" "}
-          {filteredStartups.length === 1 ? "startup" : "startups"}
-        </p>
-
-        {/* ── Grid or Empty State ── */}
-        {filteredStartups.length > 0 ? (
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key="grid"
-              layout
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredStartups.map((startup, i) => (
-                <motion.div
-                  key={startup.id}
-                  custom={i}
-                  variants={cardVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  layout
-                >
-                  <StartupCard startup={startup} />
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        ) : (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-24 text-center"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-              <SearchX size={28} className="text-slate-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">
-              No startups found
-            </h3>
-            <p className="text-sm text-slate-500 max-w-xs">
-              No startups match your current filters. Try adjusting your search
-              term, sector, or stage.
-            </p>
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedSector("All Sectors");
-                setSelectedStage("All Stages");
-              }}
-              className="mt-6 text-sm font-medium text-cyan-600 hover:text-cyan-700
-                         underline underline-offset-2 transition-colors"
-            >
-              Clear all filters
-            </button>
-          </motion.div>
-        )}
-      </div>
+      <PortfolioGrid startups={startups} />
     </div>
   );
 }

@@ -59,10 +59,15 @@ export default function LeadershipProfile() {
 
                 <div className="pt-4 flex justify-center md:justify-start">
                   <Button className="gap-2 bg-slate-400 text-white group-hover:bg-blue-700 transition-colors duration-300" asChild>
-                    <a href="#" target="_blank" rel="noopener noreferrer">
+                    <span
+                      role="button"
+                      aria-disabled="true"
+                      title="LinkedIn profile coming soon"
+                      className="cursor-not-allowed opacity-70 inline-flex items-center gap-2"
+                    >
                       <Linkedin className="w-4 h-4" />
                       Connect on LinkedIn
-                    </a>
+                    </span>
                   </Button>
                 </div>
                 

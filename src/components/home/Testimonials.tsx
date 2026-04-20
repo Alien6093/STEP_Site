@@ -128,9 +128,9 @@ export default function Testimonials() {
 
           {/* Dot Navigation */}
           <div className="flex items-center justify-center gap-2 mt-6">
-            {QUOTES.map((_, i) => (
+            {QUOTES.map((q, i) => (
               <button
-                key={i}
+                key={q.name}
                 onClick={() => setActiveIndex(i)}
                 aria-label={`Go to testimonial ${i + 1}`}
                 className={`h-2 rounded-full transition-all duration-300 ${

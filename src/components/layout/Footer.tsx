@@ -16,10 +16,10 @@ const QUICK_LINKS = [
 ];
 
 const RESOURCE_LINKS = [
-  { label: "Events",          href: "/events" },
-  { label: "Downloads",       href: "/resources#downloads" },
-  { label: "FAQs",            href: "/resources#faqs" },
-  { label: "Privacy Policy",  href: "/privacy" },
+  { label: "Events",         href: "/events"             },
+  { label: "Downloads",      href: "/resources#downloads" },
+  { label: "FAQs",           href: "/resources#faqs"      },
+  { label: "Privacy Policy", href: "/resources"            },
 ];
 
 const PARTNERS = [
@@ -30,9 +30,9 @@ const PARTNERS = [
 ];
 
 const SOCIAL = [
-  { label: "LinkedIn",   href: "#", Icon: Linkedin },
-  { label: "Twitter/X",  href: "#", Icon: Twitter },
-  { label: "Instagram",  href: "#", Icon: Instagram },
+  { label: "LinkedIn",  href: "https://www.linkedin.com/company/jss-step-noida", Icon: Linkedin },
+  { label: "Twitter/X", href: "https://twitter.com/jssstepnoida",                 Icon: Twitter  },
+  { label: "Instagram", href: "https://www.instagram.com/jssstepnoida",            Icon: Instagram },
 ];
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */

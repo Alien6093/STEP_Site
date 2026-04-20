@@ -1,14 +1,15 @@
 /* ─── Startup Data Model ─────────────────────────────────────────────── */
 
 export interface Startup {
-  id: string;
-  name: string;
-  sector: string;
-  stage: "Active" | "Graduated" | "Alumni";
-  cohortYear: string;
+  id:          string;
+  name:        string;
+  sector:      string;
+  stage:       "Active" | "Graduated" | "Alumni";
+  cohortYear:  string;
   description: string;
-  founders: string;
-  website?: string;
+  founders:    string;
+  website?:    string;
+  logo?:       string | null;   // pre-resolved CDN URL from Sanity Storage
 }
 
 /* ─── Seed Data ──────────────────────────────────────────────────────── */

@@ -79,10 +79,15 @@ export default function CoreTeam() {
 
               <div className="pt-4 border-t border-border mt-auto">
                 <Button variant="outline" className="w-full gap-2 border-border hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all" asChild>
-                  <a href="#" target="_blank" rel="noopener noreferrer">
+                  <span
+                    role="button"
+                    aria-disabled="true"
+                    title="LinkedIn profile coming soon"
+                    className="cursor-not-allowed opacity-60 inline-flex items-center gap-2 w-full"
+                  >
                     <Linkedin className="w-4 h-4" />
                     Connect on LinkedIn
-                  </a>
+                  </span>
                 </Button>
               </div>
             </div>

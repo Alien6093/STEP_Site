@@ -6,12 +6,15 @@ import { SECTORS, STAGES } from "@/lib/data/startups";
 /* ─── Props ──────────────────────────────────────────────────────────── */
 
 interface FilterBarProps {
-  searchTerm: string;
-  setSearchTerm: (v: string) => void;
-  selectedSector: string;
+  searchTerm:        string;
+  setSearchTerm:     (v: string) => void;
+  selectedSector:    string;
   setSelectedSector: (v: string) => void;
-  selectedStage: string;
-  setSelectedStage: (v: string) => void;
+  selectedStage:     string;
+  setSelectedStage:  (v: string) => void;
+  /** Dynamic options sourced from Sanity (falls back to static data) */
+  sectors?: string[];
+  stages?:  string[];
 }
 
 /* ─── Shared input/select styles ─────────────────────────────────────── */
@@ -30,7 +33,11 @@ export default function FilterBar({
   setSelectedSector,
   selectedStage,
   setSelectedStage,
+  sectors: sectorsProp,
+  stages:  stagesProp,
 }: FilterBarProps) {
+  const sectorOptions = sectorsProp ?? SECTORS;
+  const stageOptions  = stagesProp  ?? STAGES;
   return (
     <div
       className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4
@@ -62,7 +69,7 @@ export default function FilterBar({
         className={`${inputBase} flex-shrink-0 whitespace-nowrap w-auto md:w-48 cursor-pointer`}
         aria-label="Filter by sector"
       >
-        {SECTORS.map((s) => (
+        {sectorOptions.map((s) => (
           <option key={s} value={s}>
             {s}
           </option>
@@ -76,7 +83,7 @@ export default function FilterBar({
         className={`${inputBase} flex-shrink-0 whitespace-nowrap w-auto md:w-40 cursor-pointer`}
         aria-label="Filter by stage"
       >
-        {STAGES.map((s) => (
+        {stageOptions.map((s) => (
           <option key={s} value={s}>
             {s}
           </option>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ExternalLink, Users, CalendarDays } from "lucide-react";
 import Badge from "@/components/shared/Badge";
 import type { Startup } from "@/lib/data/startups";
@@ -15,6 +16,47 @@ function stageBadgeVariant(
   return "secondary"; // Graduated
 }
 
+/** Derive 1-2 uppercase initials from a startup name */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+/* ─── Logo ────────────────────────────────────────────────────────────── */
+
+function StartupLogo({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
+  if (logoUrl) {
+    return (
+      <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-100 shrink-0">
+        <Image
+          src={logoUrl}
+          alt={`${name} logo`}
+          fill
+          sizes="48px"
+          className="object-contain p-1"
+        />
+      </div>
+    );
+  }
+
+  /* Stylised initials fallback */
+  return (
+    <div
+      className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center
+                 bg-gradient-to-br from-cyan-500/20 to-slate-200
+                 border border-slate-200 select-none"
+    >
+      <span className="text-sm font-bold text-slate-700 tracking-tight">
+        {initials(name)}
+      </span>
+    </div>
+  );
+}
+
 /* ─── Component ──────────────────────────────────────────────────────── */
 
 export default function StartupCard({ startup }: { startup: Startup }) {
@@ -26,6 +68,7 @@ export default function StartupCard({ startup }: { startup: Startup }) {
     description,
     founders,
     website,
+    logo,
   } = startup;
 
   return (
@@ -36,9 +79,12 @@ export default function StartupCard({ startup }: { startup: Startup }) {
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="text-xl font-bold text-slate-900 leading-tight">
-          {name}
-        </h3>
+        <div className="flex items-center gap-3 min-w-0">
+          <StartupLogo name={name} logoUrl={logo} />
+          <h3 className="text-xl font-bold text-slate-900 leading-tight truncate">
+            {name}
+          </h3>
+        </div>
 
         {website ? (
           <Link
