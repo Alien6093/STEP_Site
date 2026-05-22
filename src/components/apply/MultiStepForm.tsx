@@ -752,7 +752,7 @@ function FormContent({ initialData }: { initialData?: InitialData }) {
       if (res.status === 429) {
         message = "You have submitted too many applications. Please wait an hour before trying again.";
       } else if (res.status === 409) {
-        message = "You have already submitted an application for this program. Our team will be in touch within 7\u201310 business days.";
+        message = "You have already submitted an application for this program. Our team will get in touch soon.";
       } else if (res.status === 401) {
         message = "Your session has expired. Please refresh the page and sign in again.";
       }

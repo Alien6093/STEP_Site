@@ -80,7 +80,7 @@ export default function ApplyHero() {
           <motion.p variants={item}
             className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
             Applications are now open for the {SITE_CONFIG.cohort.year} cohort. Submit your details
-            below and our screening committee will be in touch soon.
+            below and our screening committee will get in touch soon.
           </motion.p>
 
           {/* Process steps visual */}

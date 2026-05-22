@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
           {
             error:
               "You have already submitted an application for this program. " +
-              "Our team will be in touch within soon.",
+              "Our team will get in touch soon.",
           },
           { status: 409 }
         );
