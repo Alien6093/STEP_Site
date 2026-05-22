@@ -24,7 +24,7 @@ import type { User } from "@supabase/supabase-js";
 
 export default function AuthGate() {
   const supabase = createClient();
-  const [user,    setUser]    = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function AuthGate() {
             </h2>
             <p className="text-slate-500 text-base leading-relaxed">
               Please log in or create an account to submit your incubation
-              application. Your details will be pre-filled automatically.
+              application.
             </p>
           </div>
 
