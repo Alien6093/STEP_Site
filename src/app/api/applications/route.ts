@@ -11,9 +11,9 @@ const resend = new Resend(process.env.RESEND_API_KEY!);
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
-const FROM          = process.env.FROM_ADDRESS ?? "JSS STEP <noreply@jss-step.in>";
-const OPS_TO        = process.env.OPS_EMAIL    ?? "info@jssstepnoida.org";
-const BUCKET        = "pitch_decks";
+const FROM = process.env.FROM_ADDRESS ?? "JSS STEP <noreply@jss-step.in>";
+const OPS_TO = process.env.OPS_EMAIL ?? "info@jssstepnoida.org";
+const BUCKET = "pitch_decks";
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 /* ─── Field validators (never trust the client) ─────────────────────────── */
@@ -49,11 +49,11 @@ function safeFileName(userId: string, originalName: string): string {
 function humanTimestamp(): string {
   return new Date().toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
-    day:      "numeric",
-    month:    "long",
-    year:     "numeric",
-    hour:     "2-digit",
-    minute:   "2-digit",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (
       rateLimit("applications", user.id, {
         maxRequests: 3,
-        windowMs:    60 * 60 * 1_000,
+        windowMs: 60 * 60 * 1_000,
       })
     ) {
       return NextResponse.json(
@@ -120,30 +120,30 @@ export async function POST(request: NextRequest) {
      * str() trims, type-checks, and enforces max length.
      * We re-validate everything server-side — the Zod schema is client-only.
      */
-    const fullName         = str(field("fullName"),         120);
-    const email            = str(field("email"),            254);
-    const phone            = str(field("phone"),             30);
-    const affiliation      = str(field("affiliation"),       60);
-    const orgName          = str(field("orgName"),          120);
-    const startupName      = str(field("startupName"),      120);
-    const stage            = str(field("stage"),             60);
-    const sector           = str(field("sector"),            60);
+    const fullName = str(field("fullName"), 120);
+    const email = str(field("email"), 254);
+    const phone = str(field("phone"), 30);
+    const affiliation = str(field("affiliation"), 60);
+    const orgName = str(field("orgName"), 120);
+    const startupName = str(field("startupName"), 120);
+    const stage = str(field("stage"), 60);
+    const sector = str(field("sector"), 60);
     const problemStatement = str(field("problemStatement"), 2000);
     const proposedSolution = str(field("proposedSolution"), 2000);
-    const program          = str(field("program"),          120);
+    const program = str(field("program"), 120);
 
     const missingFields = [
-      !fullName         && "fullName",
-      !email            && "email",
-      !phone            && "phone",
-      !affiliation      && "affiliation",
-      !orgName          && "orgName",
-      !startupName      && "startupName",
-      !stage            && "stage",
-      !sector           && "sector",
+      !fullName && "fullName",
+      !email && "email",
+      !phone && "phone",
+      !affiliation && "affiliation",
+      !orgName && "orgName",
+      !startupName && "startupName",
+      !stage && "stage",
+      !sector && "sector",
       !problemStatement && "problemStatement",
       !proposedSolution && "proposedSolution",
-      !program          && "program",
+      !program && "program",
     ].filter(Boolean);
 
     if (missingFields.length > 0) {
@@ -155,13 +155,13 @@ export async function POST(request: NextRequest) {
 
     /* ─── 5. Optional text fields ────────────────────────────────────────── */
 
-    const linkedin        = strOpt(field("linkedin"),        500);
-    const teamSize        = strOpt(field("teamSize"),         10);
-    const targetMarket    = strOpt(field("targetMarket"),    200);
-    const isRegistered    = strOpt(field("isRegistered"),     60);
-    const existingFunding = strOpt(field("existingFunding"),  60);
-    const heardFrom       = strOpt(field("heardFrom"),        60);
-    const additionalInfo  = strOpt(field("additionalInfo"), 2000);
+    const linkedin = strOpt(field("linkedin"), 500);
+    const teamSize = strOpt(field("teamSize"), 10);
+    const targetMarket = strOpt(field("targetMarket"), 200);
+    const isRegistered = strOpt(field("isRegistered"), 60);
+    const existingFunding = strOpt(field("existingFunding"), 60);
+    const heardFrom = strOpt(field("heardFrom"), 60);
+    const additionalInfo = strOpt(field("additionalInfo"), 2000);
 
     /* ─── 6. Pitch deck upload (optional) ────────────────────────────────── */
     /*
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
 
       /* Convert File → ArrayBuffer → Uint8Array for Supabase Storage SDK */
       const arrayBuffer = await pitchDeckFile.arrayBuffer();
-      const fileBuffer  = new Uint8Array(arrayBuffer);
+      const fileBuffer = new Uint8Array(arrayBuffer);
 
       const fileName = safeFileName(user.id, pitchDeckFile.name);
 
@@ -216,9 +216,9 @@ export async function POST(request: NextRequest) {
       const { error: uploadError } = await adminClient.storage
         .from(BUCKET)
         .upload(fileName, fileBuffer, {
-          contentType:  pitchDeckFile.type,
+          contentType: pitchDeckFile.type,
           cacheControl: "3600",
-          upsert:       false, // never silently overwrite an existing file
+          upsert: false, // never silently overwrite an existing file
         });
 
       if (uploadError) {
@@ -242,27 +242,27 @@ export async function POST(request: NextRequest) {
     const { error: insertError } = await supabase
       .from("incubation_applications")
       .insert({
-        user_id:           user.id,
-        full_name:         fullName!.trim(),
-        email:             email!.toLowerCase().trim(),
-        phone:             phone!.trim(),
-        linkedin:          linkedin        || null,
-        affiliation:       affiliation!.trim(),
-        org_name:          orgName!.trim(),
-        startup_name:      startupName!.trim(),
-        target_market:     targetMarket   || null,
-        team_size:         teamSize ? Number(teamSize) : null,
-        stage:             stage!.trim(),
-        sector:            sector!.trim(),
-        is_registered:     isRegistered   || null,
+        user_id: user.id,
+        full_name: fullName!.trim(),
+        email: email!.toLowerCase().trim(),
+        phone: phone!.trim(),
+        linkedin: linkedin || null,
+        affiliation: affiliation!.trim(),
+        org_name: orgName!.trim(),
+        startup_name: startupName!.trim(),
+        target_market: targetMarket || null,
+        team_size: teamSize ? Number(teamSize) : null,
+        stage: stage!.trim(),
+        sector: sector!.trim(),
+        is_registered: isRegistered || null,
         problem_statement: problemStatement!.trim(),
         proposed_solution: proposedSolution!.trim(),
-        program:           program!.trim(),
-        existing_funding:  existingFunding || null,
-        heard_from:        heardFrom      || null,
-        additional_info:   additionalInfo || null,
-        pitch_deck_path:   pitchDeckPath,           // ← new column
-        submitted_at:      new Date().toISOString(),
+        program: program!.trim(),
+        existing_funding: existingFunding || null,
+        heard_from: heardFrom || null,
+        additional_info: additionalInfo || null,
+        pitch_deck_path: pitchDeckPath,           // ← new column
+        submitted_at: new Date().toISOString(),
       });
 
     if (insertError) {
@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
           {
             error:
               "You have already submitted an application for this program. " +
-              "Our team will be in touch within 7–10 business days.",
+              "Our team will be in touch within soon.",
           },
           { status: 409 }
         );
@@ -304,8 +304,8 @@ export async function POST(request: NextRequest) {
      * allSettled: both emails fire concurrently.
      * A failed send is logged but NEVER returns 500 — the DB row is committed.
      */
-    const submittedAt  = humanTimestamp();
-    const userName     = fullName!.trim();
+    const submittedAt = humanTimestamp();
+    const userName = fullName!.trim();
     const founderEmail = email!.toLowerCase().trim();
 
     await Promise.allSettled([
@@ -313,16 +313,16 @@ export async function POST(request: NextRequest) {
       /* Email 1 — Applicant receipt */
       resend.emails
         .send({
-          from:    FROM,
-          to:      founderEmail,
+          from: FROM,
+          to: founderEmail,
           subject: "Application Received — JSS STEP Incubation Programme",
-          react:   React.createElement(ApplicationConfirmationEmail, {
+          react: React.createElement(ApplicationConfirmationEmail, {
             applicantName: userName,
-            email:         founderEmail,
-            startupName:   startupName!.trim(),
-            program:       program!.trim(),
-            sector:        sector!.trim(),
-            stage:         stage!.trim(),
+            email: founderEmail,
+            startupName: startupName!.trim(),
+            program: program!.trim(),
+            sector: sector!.trim(),
+            stage: stage!.trim(),
             submittedAt,
           }),
         })
@@ -333,25 +333,25 @@ export async function POST(request: NextRequest) {
       /* Email 2 — Internal ops briefing */
       resend.emails
         .send({
-          from:    FROM,
-          to:      OPS_TO,
+          from: FROM,
+          to: OPS_TO,
           subject: `New Application: ${userName} — ${startupName!.trim()} (${program!.trim()})`,
-          react:   React.createElement(ApplicationInternalNotificationEmail, {
-            applicantName:    userName,
-            email:            founderEmail,
-            phone:            phone!.trim(),
+          react: React.createElement(ApplicationInternalNotificationEmail, {
+            applicantName: userName,
+            email: founderEmail,
+            phone: phone!.trim(),
             linkedin,
-            affiliation:      affiliation!.trim(),
-            orgName:          orgName!.trim(),
-            startupName:      startupName!.trim(),
+            affiliation: affiliation!.trim(),
+            orgName: orgName!.trim(),
+            startupName: startupName!.trim(),
             targetMarket,
             teamSize,
-            stage:            stage!.trim(),
-            sector:           sector!.trim(),
+            stage: stage!.trim(),
+            sector: sector!.trim(),
             isRegistered,
             problemStatement: problemStatement!.trim(),
             proposedSolution: proposedSolution!.trim(),
-            program:          program!.trim(),
+            program: program!.trim(),
             existingFunding,
             heardFrom,
             additionalInfo,
