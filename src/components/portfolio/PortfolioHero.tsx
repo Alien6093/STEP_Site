@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRight, Home, TrendingUp, Users, Banknote } from "lucide-react";
+import { SITE_CONFIG } from "@/lib/constants";
 
 /* ─── Stagger variants ───────────────────────────────────────────────── */
 
@@ -18,9 +19,9 @@ const item = {
 /* ─── Quick stats ────────────────────────────────────────────────────── */
 
 const STATS = [
-  { icon: Users,      value: "300+",  label: "Incubated" },
-  { icon: TrendingUp, value: "11+",   label: "Exits" },
-  { icon: Banknote,   value: "₹50L+", label: "Seed Funding" },
+  { icon: Users,      value: SITE_CONFIG.stats.startupsSupported,              label: "Incubated" },
+  { icon: TrendingUp, value: SITE_CONFIG.stats.successfulExits,                label: "Exits" },
+  { icon: Banknote,   value: `₹${SITE_CONFIG.stats.seedFunding}`,               label: "Seed Funding" },
 ] as const;
 
 /* ─── Component ──────────────────────────────────────────────────────── */
@@ -61,7 +62,7 @@ export default function PortfolioHero() {
                        border-cyan-500/30 bg-cyan-500/10 text-cyan-400
                        text-xs font-semibold tracking-widest uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            300+ Startups Launched
+            {SITE_CONFIG.stats.startupsSupported} Startups Launched
           </motion.span>
 
           {/* Headline */}
@@ -78,7 +79,7 @@ export default function PortfolioHero() {
           {/* Sub-headline */}
           <motion.p variants={item}
             className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
-            Discover the 300+ visionary companies that began their journey at JSS&nbsp;STEP
+            Discover the {SITE_CONFIG.stats.startupsSupported} visionary companies that began their journey at JSS STEP
             and are now making a global impact.
           </motion.p>
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_CONFIG } from "@/lib/constants";
 import ApplyHero from "@/components/apply/ApplyHero";
 import AuthGate from "@/components/apply/AuthGate";
 import ProgramFAQ from "@/components/programs/ProgramFAQ";
@@ -8,7 +9,7 @@ import ProgramFAQ from "@/components/programs/ProgramFAQ";
 export const metadata: Metadata = {
   title: "Apply Now | JSS STEP",
   description:
-    "Submit your application to join the JSS STEP incubation program for the 2026-27 cohort. Open to students, faculty, alumni, and external deep-tech founders.",
+    `Submit your application to join the JSS STEP incubation program for the ${SITE_CONFIG.cohort.year} cohort. Open to students, faculty, alumni, and external deep-tech founders.`,
 };
 
 /* ─── Page ───────────────────────────────────────────────────────────── */

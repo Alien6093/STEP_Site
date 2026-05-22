@@ -1,32 +1,41 @@
 "use client";
 
+import { SITE_CONFIG } from "@/lib/constants";
 import AnimatedNumber from "@/components/shared/AnimatedNumber";
 import ScrollFadeIn from "@/components/shared/ScrollFadeIn";
 
 /* ─── Data ───────────────────────────────────────────────────────────── */
 
+/*
+ * AnimatedNumber expects a numeric `value` and a string `suffix`.
+ * SITE_CONFIG.stats stores combined strings like "300+" or "50L+".
+ * parseStat splits them: numeric prefix → value, remainder → suffix.
+ */
+function parseStat(raw: string): { value: number; suffix: string } {
+  const match = raw.match(/^(\d+)(.*)$/);
+  return match
+    ? { value: parseInt(match[1], 10), suffix: match[2] }
+    : { value: 0, suffix: raw };
+}
+
 const STATS = [
   {
-    value: 300,
-    suffix: "+",
+    ...parseStat(SITE_CONFIG.stats.startupsSupported),
     label: "Startups Supported",
     note: null,
   },
   {
-    value: 50,
-    suffix: "L+",
+    ...parseStat(SITE_CONFIG.stats.seedFunding),
     label: "Seed Funding (₹)",
     note: "via NIDHI / Start In UP",
   },
   {
-    value: 11,
-    suffix: "+",
+    ...parseStat(SITE_CONFIG.stats.successfulExits),
     label: "Successful Exits",
     note: null,
   },
   {
-    value: 20,
-    suffix: "+",
+    ...parseStat(SITE_CONFIG.stats.yearsOfLegacy),
     label: "Years of Legacy",
     note: null,
   },

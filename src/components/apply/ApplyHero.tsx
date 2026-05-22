@@ -1,5 +1,6 @@
 "use client";
 
+import { SITE_CONFIG } from "@/lib/constants";
 import { motion } from "framer-motion";
 import { FileText, Search, Users, Rocket, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
@@ -8,9 +9,9 @@ import Link from "next/link";
 
 const STEPS = [
   { icon: FileText, label: "Submit Application", step: "01" },
-  { icon: Search,   label: "Screening",          step: "02" },
-  { icon: Users,    label: "Interview",           step: "03" },
-  { icon: Rocket,   label: "Onboarding",          step: "04" },
+  { icon: Search, label: "Screening", step: "02" },
+  { icon: Users, label: "Interview", step: "03" },
+  { icon: Rocket, label: "Onboarding", step: "04" },
 ] as const;
 
 /* ─── Stagger variants ───────────────────────────────────────────────── */
@@ -20,7 +21,7 @@ const container = {
   visible: { transition: { staggerChildren: 0.13, delayChildren: 0.2 } },
 };
 const item = {
-  hidden:  { opacity: 0, y: 22 },
+  hidden: { opacity: 0, y: 22 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
@@ -61,7 +62,7 @@ export default function ApplyHero() {
                        border-cyan-500/30 bg-cyan-500/10 text-cyan-400
                        text-xs font-semibold tracking-widest uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            2025–26 Cohort · Applications Open
+            {SITE_CONFIG.cohort.year} Cohort · {SITE_CONFIG.cohort.isOpen ? SITE_CONFIG.cohort.statusText : SITE_CONFIG.cohort.closedText}
           </motion.span>
 
           {/* Headline */}
@@ -78,7 +79,7 @@ export default function ApplyHero() {
           {/* Sub-headline */}
           <motion.p variants={item}
             className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
-            Applications are now open for the 2025–26 cohort. Submit your details
+            Applications are now open for the {SITE_CONFIG.cohort.year} cohort. Submit your details
             below and our screening committee will be in touch within 7–10 business days.
           </motion.p>
 
