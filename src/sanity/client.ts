@@ -11,7 +11,7 @@ export const client = createClient({
   projectId,
   dataset,
   apiVersion,
-  useCdn:      true,
+  useCdn: true,
   perspective: "published",
   stega: false,           // disable Sanity Visual Editing overlays by default
 });
@@ -24,8 +24,8 @@ export const previewClient = createClient({
   projectId,
   dataset,
   apiVersion,
-  useCdn:  false,
-  token:   process.env.SANITY_API_TOKEN,
+  useCdn: false,
+  token: process.env.SANITY_API_TOKEN,
   perspective: "previewDrafts",
   stega: false,
 });

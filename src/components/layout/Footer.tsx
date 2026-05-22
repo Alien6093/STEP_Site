@@ -1,40 +1,55 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Mail, Linkedin, Twitter, Instagram } from "lucide-react";
-import { motion } from "framer-motion";
+import { MapPin, Mail, Linkedin, Instagram } from "lucide-react";
 
+/* Official X (formerly Twitter) monogram — not available in lucide-react */
+const XIcon = ({ size = 18 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+import { motion } from "framer-motion";
+import ObfuscatedEmail from "@/components/ui/ObfuscatedEmail";
+import { SITE_CONFIG } from "@/lib/constants"; // <-- Imported the central config
 
 /* ─── Data ────────────────────────────────────────────────────────────── */
 
 const QUICK_LINKS = [
-  { label: "Home",      href: "/" },
-  { label: "About",     href: "/about" },
-  { label: "Programs",  href: "/programs" },
+  { label: "Home", href: "/" },
+  { label: "About", href: "/about" },
+  { label: "Programs", href: "/programs" },
   { label: "Portfolio", href: "/portfolio" },
-  { label: "Apply",     href: "/apply" },
+  { label: "Apply", href: "/apply" },
 ];
 
 const RESOURCE_LINKS = [
-  { label: "Events",         href: "/events"             },
-  { label: "Downloads",      href: "/resources#downloads" },
-  { label: "FAQs",           href: "/resources#faqs"      },
-  { label: "Privacy Policy", href: "/resources"            },
+  { label: "Events", href: "/events" },
+  { label: "Downloads", href: "/resources#downloads" },
+  { label: "FAQs", href: "/resources#faqs" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
 ];
 
 const PARTNERS = [
-  { name: "DST",           full: "Dept. of Science & Technology" },
-  { name: "NIDHI",         full: "National Initiative for Developing & Harnessing Innovations" },
+  { name: "DST", full: "Dept. of Science & Technology" },
+  { name: "NIDHI", full: "National Initiative for Developing & Harnessing Innovations" },
   { name: "Startup India", full: "Govt. of India Initiative" },
-  { name: "JSSATEN",       full: "JSS Academy of Technical Education" },
+  { name: "JSSATEN", full: "JSS Academy of Technical Education" },
 ];
 
+// UI mapping for social icons to use the central config URLs
 const SOCIAL = [
-  { label: "LinkedIn",  href: "https://www.linkedin.com/company/jss-step-noida", Icon: Linkedin },
-  { label: "Twitter/X", href: "https://twitter.com/jssstepnoida",                 Icon: Twitter  },
-  { label: "Instagram", href: "https://www.instagram.com/jssstepnoida",            Icon: Instagram },
+  { label: "LinkedIn", href: SITE_CONFIG.socials.linkedin, Icon: Linkedin },
+  { label: "X (formerly Twitter)", href: SITE_CONFIG.socials.x, Icon: XIcon },
+  { label: "Instagram", href: SITE_CONFIG.socials.instagram, Icon: Instagram },
 ];
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
@@ -60,45 +75,6 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-/*
- * ObfuscatedEmail — bot-proof email display.
- *
- * Strategy: user and domain are stored as two separate string constants.
- * They are NEVER concatenated in the SSR/static HTML payload — scrapers
- * reading the raw markup cannot harvest a full email address.
- * The mailto: href is constructed client-side only on first interaction
- * (onMouseEnter / onFocus), stored in React state, and inserted lazily.
- *
- * Visible text is rendered as two adjacent <span>s so it reads naturally
- * to human eyes while remaining two distinct DOM text nodes for scrapers.
- */
-const EMAIL_USER   = "info";
-const EMAIL_DOMAIN = "jssstepnoida.org";
-
-function ObfuscatedEmail({ className }: { className?: string }) {
-  const [href, setHref] = useState<string | undefined>(undefined);
-
-  const reveal = () => {
-    if (!href) setHref(`mailto:${EMAIL_USER}@${EMAIL_DOMAIN}`);
-  };
-
-  return (
-    <a
-      href={href}                   /* undefined until interaction — never in SSR HTML */
-      onMouseEnter={reveal}
-      onFocus={reveal}
-      onClick={reveal}              /* fallback for keyboard-only users */
-      className={className}
-      aria-label={`Email us at ${EMAIL_USER} at ${EMAIL_DOMAIN}`}
-    >
-      {/* Two adjacent spans — reads as one address to humans, two tokens to bots */}
-      <span>{EMAIL_USER}</span>
-      <span>&#64;{EMAIL_DOMAIN}</span>
-    </a>
-  );
-}
-
-
 /* ─── Footer ──────────────────────────────────────────────────────────── */
 
 export default function Footer() {
@@ -123,9 +99,9 @@ export default function Footer() {
                 fill
                 sizes="176px"
                 className="object-contain mix-blend-multiply"
+                priority={false}
               />
             </div>
-
 
             <p className="text-sm text-slate-500 leading-relaxed max-w-xs">
               DST‑supported Technology Business Incubator empowering deep‑tech startups
@@ -141,11 +117,13 @@ export default function Footer() {
               </address>
             </div>
 
-            <div className="flex items-center gap-2 text-slate-500">
-              <Mail size={15} className="shrink-0 text-slate-400" />
-              <ObfuscatedEmail className="text-sm hover:text-cyan-600 transition-colors" />
+            <div className="flex items-center gap-2.5 text-slate-500">
+              <Mail size={15} className="shrink-0 text-slate-400 -translate-y-[1px]" />
+              <ObfuscatedEmail
+                encoded={SITE_CONFIG.supportEmailBase64}
+                className="text-sm hover:text-cyan-600 transition-colors"
+              />
             </div>
-
           </div>
 
           {/* Col 2 — Quick Links */}
@@ -198,13 +176,14 @@ export default function Footer() {
             {" "}JSS STEP. All rights reserved.
           </p>
 
-
           <div className="flex items-center gap-4">
             {SOCIAL.map(({ label, href, Icon }) => (
               <a
                 key={label}
                 href={href}
-                aria-label={label}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${label} (opens in new tab)`}
                 className="text-slate-400 hover:text-cyan-600 transition-colors duration-200"
               >
                 <Icon size={18} />

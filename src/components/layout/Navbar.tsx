@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import LoginModal from "@/components/auth/LoginModal";
 import UserDropdown from "@/components/auth/UserDropdown";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 /* ─── Nav data ────────────────────────────────────────────────────────── */
 
@@ -33,7 +34,15 @@ const ECOSYSTEM_ITEMS: NavItem[] = [
 /* Desktop Dropdown                                                        */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-function DesktopDropdown({ label, items }: { label: string; items: NavItem[] }) {
+function DesktopDropdown({
+  label,
+  items,
+  scrolled,
+}: {
+  label: string;
+  items: NavItem[];
+  scrolled: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -83,15 +92,18 @@ function DesktopDropdown({ label, items }: { label: string; items: NavItem[] }) 
       onMouseLeave={() => setOpen(false)}
       onBlur={handleBlur}
     >
-      {/* Trigger */}
+      {/* Trigger — dark text at top (readable on any bg), light text when scrolled (dark glass) */}
       <button
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={`dropdown-${label.toLowerCase()}`}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={handleKeyDown}
-        className="flex items-center gap-1 py-2 text-sm font-medium
-                   text-slate-700 hover:text-cyan-600 transition-colors duration-200"
+        className={`flex items-center gap-1 py-2 text-sm font-medium
+                   transition-colors duration-200
+                   ${scrolled
+                     ? "text-slate-200 hover:text-white"
+                     : "text-slate-900 hover:text-cyan-600 font-medium"}`}
       >
         {label}
         <ChevronDown
@@ -208,7 +220,11 @@ export default function Navbar() {
   const supabase = useMemo(() => createClient(), []);
 
   const scrollY = useScrollPosition();
-  const scrolled = scrollY > 20;
+  /**
+   * Glassmorphism activates after 50 px of scroll — gives the hero section
+   * a clean transparent bar before the effect kicks in.
+   */
+  const scrolled = scrollY > 50;
 
   const [mobileOpen,       setMobileOpen]       = useState(false);
   const [isAuthenticated,  setIsAuthenticated]  = useState(false);
@@ -284,6 +300,20 @@ export default function Navbar() {
     };
   }, [supabase]);
 
+  /*
+   * Global custom-event bridge — allows any page component (e.g. AuthGate
+   * on /apply) to open the LoginModal by firing:
+   *   window.dispatchEvent(new CustomEvent("open-login-modal"))
+   *
+   * This avoids prop-drilling the modal setter through the component tree
+   * or relying on a global state library for a single interaction.
+   */
+  useEffect(() => {
+    const openModal = () => setIsLoginModalOpen(true);
+    window.addEventListener("open-login-modal", openModal);
+    return () => window.removeEventListener("open-login-modal", openModal);
+  }, []);
+
   return (
     <>
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -293,8 +323,10 @@ export default function Navbar() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
           ${scrolled
-            ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100"
-            : "bg-transparent"
+            /* Dark glassmorphism — frosted slate panel */
+            ? "backdrop-blur-md bg-slate-950/80 border-b border-slate-800 shadow-sm"
+            /* Transparent — hero gradient shows through */
+            : "bg-transparent border-b border-transparent"
           }`}
       >
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:pl-8 lg:pr-4
@@ -308,7 +340,7 @@ export default function Navbar() {
                 alt="JSS STEP Logo"
                 fill
                 sizes="192px"
-                className="object-contain mix-blend-multiply"
+                className="object-contain"
                 priority
               />
             </div>
@@ -323,21 +355,31 @@ export default function Navbar() {
             {/* Home */}
             <Link
               href="/"
-              className="flex items-center py-2 text-sm font-medium text-slate-700 hover:text-cyan-600 transition-colors duration-200"
+              className={`flex items-center py-2 text-sm font-medium transition-colors duration-200
+                          ${
+                            scrolled
+                              ? "text-slate-200 hover:text-white"
+                              : "text-slate-900 hover:text-cyan-600"
+                          }`}
             >
               Home
             </Link>
 
             {/* About ↓ */}
-            <DesktopDropdown label="About" items={ABOUT_ITEMS} />
+            <DesktopDropdown label="About" items={ABOUT_ITEMS} scrolled={scrolled} />
 
             {/* Ecosystem ↓ */}
-            <DesktopDropdown label="Ecosystem" items={ECOSYSTEM_ITEMS} />
+            <DesktopDropdown label="Ecosystem" items={ECOSYSTEM_ITEMS} scrolled={scrolled} />
 
             {/* Programs */}
             <Link
               href="/programs"
-              className="flex items-center py-2 text-sm font-medium text-slate-700 hover:text-cyan-600 transition-colors duration-200"
+              className={`flex items-center py-2 text-sm font-medium transition-colors duration-200
+                          ${
+                            scrolled
+                              ? "text-slate-200 hover:text-white"
+                              : "text-slate-900 hover:text-cyan-600"
+                          }`}
             >
               Programs
             </Link>
@@ -345,7 +387,12 @@ export default function Navbar() {
             {/* Portfolio */}
             <Link
               href="/portfolio"
-              className="flex items-center py-2 text-sm font-medium text-slate-700 hover:text-cyan-600 transition-colors duration-200"
+              className={`flex items-center py-2 text-sm font-medium transition-colors duration-200
+                          ${
+                            scrolled
+                              ? "text-slate-200 hover:text-white"
+                              : "text-slate-900 hover:text-cyan-600"
+                          }`}
             >
               Portfolio
             </Link>
@@ -354,12 +401,20 @@ export default function Navbar() {
           {/* ── Right side: Apply Now → Auth → Hamburger ── */}
           <div className="flex items-center gap-4 shrink-0">
 
-            {/* Apply Now pill — comes FIRST on desktop */}
+            {/*
+             * Apply Now pill
+             * - Transparent state: solid bg-slate-900 pill (always visible on any bg)
+             * - Scrolled state:    cyan accent pill (pops on dark glass)
+             */}
             <Link
               href="/apply"
-              className="hidden md:inline-flex items-center bg-slate-900 text-white font-medium
-                         text-sm px-4 py-2 rounded-full hover:bg-cyan-600 hover:shadow-md
-                         transition-all duration-300 hover:-translate-y-0.5 transform"
+              className={`hidden md:inline-flex items-center font-medium text-sm px-4 py-2
+                         rounded-full transition-all duration-300 hover:-translate-y-0.5 transform
+                         ${
+                           scrolled
+                             ? "bg-cyan-500 text-white hover:bg-cyan-400 shadow-md"
+                             : "bg-slate-900 text-white hover:bg-cyan-600 shadow-sm"
+                         }`}
             >
               Apply Now
             </Link>
@@ -367,17 +422,29 @@ export default function Navbar() {
             {/* Desktop auth — comes AFTER Apply Now */}
             <div className="hidden md:flex items-center">
               {loading ? (
-                /* Neutral skeleton — prevents flash of wrong auth state */
-                <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" aria-hidden="true" />
+                /*
+                 * Auth-state skeleton — shown until Supabase resolves the session.
+                 * bg adapts so it's visible on both transparent and frosted-glass states.
+                 */
+                <Skeleton
+                  className={`w-8 h-8 rounded-full ${
+                    scrolled ? "bg-slate-700/60" : "bg-slate-300/60"
+                  }`}
+                />
               ) : isAuthenticated ? (
                 <UserDropdown user={user} />
               ) : (
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium
-                             text-slate-700 border border-slate-200
-                             hover:border-cyan-400 hover:text-cyan-600 hover:bg-cyan-50
-                             transition-all duration-200"
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium
+                             transition-all duration-200
+                             ${
+                               scrolled
+                                 /* Dark glass — light-bordered ghost */
+                                 ? "text-slate-200 border border-slate-600 hover:border-cyan-400 hover:text-white hover:bg-white/10"
+                                 /* Transparent — dark-bordered ghost, readable on white */
+                                 : "text-slate-900 border border-slate-300 hover:border-cyan-500 hover:text-cyan-600 hover:bg-cyan-50"
+                             }`}
                 >
                   <LogIn size={15} />
                   Register
@@ -385,9 +452,14 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Hamburger — mobile only */}
+            {/* Hamburger — mobile only. Dark icon at top (readable on white), light icon when scrolled */}
             <button
-              className="md:hidden p-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
+              className={`md:hidden p-2 rounded-lg transition-colors
+                         ${
+                           scrolled
+                             ? "text-slate-200 hover:bg-white/10"
+                             : "text-slate-900 hover:bg-slate-100"
+                         }`}
               onClick={() => setMobileOpen((v) => !v)}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
             >
@@ -470,7 +542,7 @@ export default function Navbar() {
               {loading ? (
                 /* Skeleton during auth resolution — prevents layout jump */
                 <div className="py-4 px-6 border-b border-slate-100">
-                  <div className="h-5 w-32 bg-slate-100 rounded animate-pulse" aria-hidden="true" />
+                  <Skeleton className="h-5 w-32 rounded-md" />
                 </div>
               ) : !isAuthenticated ? (
                 <button

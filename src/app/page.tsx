@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 import Link from "next/link";
 import Image from "next/image";
@@ -11,26 +11,46 @@ import FocusAreas from "@/components/home/FocusAreas";
 import WhyChooseUs from "@/components/home/WhyChooseUs";
 import Testimonials from "@/components/home/Testimonials";
 import PartnersStrip from "@/components/home/PartnersStrip";
+import ScrollFadeIn from "@/components/shared/ScrollFadeIn";
 
 /* ─── Sanity type ─────────────────────────────────────────────────────── */
 
 interface SanityPortfolio {
-  _id:         string;
-  startupName: string;
-  sector:      string | null;
-  description: string | null;
-  logo:        { asset: { _ref: string } } | null;
-  websiteUrl:  string | null;
+  _id:          string;
+  startupName:  string;
+  sector:       string | null;
+  description:  string | null;
+  keyHighlight: string | null;
+  logo:         { asset: { _ref: string } } | null;
+  websiteUrl:   string | null;
 }
 
 /* ─── GROQ ────────────────────────────────────────────────────────────── */
 
-const PORTFOLIO_QUERY = `
-  *[_type == "portfolio" && isFeatured == true] | order(_createdAt desc)[0...3] {
+/**
+ * Primary: portfolios explicitly marked as featured, newest first, max 4.
+ * Fallback: if none are featured yet, show the 4 most recent portfolios
+ * so the section is never empty while the CMS is being populated.
+ */
+const FEATURED_QUERY = `
+  *[_type == "portfolio" && isFeatured == true] | order(_createdAt desc)[0...4] {
     _id,
     startupName,
     sector,
     description,
+    keyHighlight,
+    logo,
+    websiteUrl
+  }
+`;
+
+const FALLBACK_QUERY = `
+  *[_type == "portfolio"] | order(_createdAt desc)[0...4] {
+    _id,
+    startupName,
+    sector,
+    description,
+    keyHighlight,
     logo,
     websiteUrl
   }
@@ -55,11 +75,11 @@ function FeaturedCard({ startup }: { startup: SanityPortfolio }) {
     ? urlFor(startup.logo).width(160).height(160).fit("crop").auto("format").url()
     : null;
 
-  return (
+  const CardContent = (
     <div
       className="group bg-white rounded-2xl border border-slate-100 p-6
                  hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-1
-                 transition-all duration-300 flex flex-col gap-4"
+                 transition-all duration-300 flex flex-col gap-4 h-full"
     >
       {/* Logo / fallback */}
       <div
@@ -98,26 +118,13 @@ function FeaturedCard({ startup }: { startup: SanityPortfolio }) {
           )}
         </div>
 
-        {/* External link icon — only shown when URL exists */}
-        {startup.websiteUrl ? (
-          <a
-            href={startup.websiteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Visit ${startup.startupName} website`}
-            onClick={(e) => e.stopPropagation()}
-            className="shrink-0 mt-0.5 text-slate-300 group-hover:text-cyan-500
-                       transition-colors duration-200"
-          >
-            <ExternalLink size={15} />
-          </a>
-        ) : (
-          <ExternalLink
-            size={15}
-            className="shrink-0 mt-0.5 text-slate-200"
-            aria-hidden
-          />
-        )}
+        {/* External link icon — always visible, animates on hover */}
+        <ExternalLink
+          size={15}
+          className="shrink-0 mt-0.5 text-slate-300 group-hover:text-cyan-500
+                     transition-colors duration-200"
+          aria-hidden
+        />
       </div>
 
       {/* Description */}
@@ -126,18 +133,65 @@ function FeaturedCard({ startup }: { startup: SanityPortfolio }) {
           {startup.description}
         </p>
       )}
+
+      {/* Key highlight badge */}
+      {startup.keyHighlight && (
+        <span
+          className="inline-block self-start px-2.5 py-1 rounded-lg text-[11px] font-semibold
+                     bg-amber-50 border border-amber-200 text-amber-700"
+        >
+          🏆 {startup.keyHighlight}
+        </span>
+      )}
     </div>
   );
+
+  /* Wrap entire card in an anchor if websiteUrl exists, otherwise plain div */
+  if (startup.websiteUrl) {
+    return (
+      <a
+        href={startup.websiteUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Visit ${startup.startupName} website`}
+        className="block focus-visible:outline-none focus-visible:ring-2
+                   focus-visible:ring-cyan-500 rounded-2xl"
+      >
+        {CardContent}
+      </a>
+    );
+  }
+
+  return <div>{CardContent}</div>;
 }
 
 /* ─── Page ────────────────────────────────────────────────────────────── */
 
 export default async function Home() {
-  const featuredStartups = await client.fetch<SanityPortfolio[]>(
-    PORTFOLIO_QUERY,
+  /*
+   * Two-step fallback strategy:
+   *   1. Try to fetch portfolios flagged isFeatured == true in Sanity Studio.
+   *   2. If none are flagged yet (empty result), fall back to the 4 most
+   *      recently created portfolios so the section never shows an empty state.
+   *
+   * Both fetches share the same ISR revalidate window so there is no
+   * caching inconsistency between the two code paths.
+   */
+  const ISR_OPTIONS = { next: { revalidate: 60 } } as const;
+
+  let featuredStartups = await client.fetch<SanityPortfolio[]>(
+    FEATURED_QUERY,
     {},
-    { cache: "no-store" }
+    ISR_OPTIONS
   );
+
+  if (!featuredStartups || featuredStartups.length === 0) {
+    featuredStartups = await client.fetch<SanityPortfolio[]>(
+      FALLBACK_QUERY,
+      {},
+      ISR_OPTIONS
+    );
+  }
 
   return (
     <div className="w-full">
@@ -167,14 +221,16 @@ export default async function Home() {
           </div>
 
           {featuredStartups.length === 0 ? (
-            /* Graceful empty state — shown until isFeatured is toggled in Studio */
+            /* Graceful empty state — shown until isFeatured is toggled in Sanity Studio */
             <p className="text-center text-sm text-slate-400 py-12">
-              Featured startups coming soon. Check back shortly!
+              Our featured startups will appear here soon — check back shortly!
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {featuredStartups.map((startup) => (
-                <FeaturedCard key={startup._id} startup={startup} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {featuredStartups.map((startup, i) => (
+                <ScrollFadeIn key={startup._id} delay={i * 0.08}>
+                  <FeaturedCard startup={startup} />
+                </ScrollFadeIn>
               ))}
             </div>
           )}

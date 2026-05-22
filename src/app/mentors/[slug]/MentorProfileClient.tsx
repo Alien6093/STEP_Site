@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import BookingForm from "@/components/booking/BookingForm";
+import LoginModal from "@/components/auth/LoginModal";
 
 /* ─── Types (passed as props from Server Component) ──────────────────── */
 
@@ -88,6 +89,7 @@ export default function MentorProfileClient({
   mentor: MentorProfileData;
 }) {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   /* Derive initials as fallback avatar */
   const initials = mentor.name
@@ -296,6 +298,13 @@ export default function MentorProfileClient({
         mentorName={mentor.name}
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
+        onRequestLogin={() => setIsLoginOpen(true)}
+      />
+
+      {/* Login modal — opened by the auth interceptor in BookingForm */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
       />
     </div>
   );

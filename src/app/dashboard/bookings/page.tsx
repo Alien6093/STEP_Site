@@ -49,7 +49,7 @@ export default async function BookingsPage() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[bookings page] fetch error:", error);
+    console.error("[bookings page] fetch error:", error instanceof Error ? error.message : JSON.stringify(error));
     /* Render an error state instead of silently showing an empty list */
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
@@ -67,16 +67,16 @@ export default async function BookingsPage() {
       : row.mentor_slots;
 
     return {
-      id:           row.id            as string,
-      slot_id:      slot?.id          as string ?? "",
-      mentor_name:  "JSS STEP Mentor",           // not stored on slot row
+      id: row.id as string,
+      slot_id: slot?.id as string ?? "",
+      mentor_name: "JSS STEP Mentor",           // not stored on slot row
       mentor_title: "Mentor Session",             // not stored on slot row
       mentor_email: "",                           // not stored on slot row
-      topic:        row.discussion_topic as string ?? "",
-      slot_date:    slot?.slot_date   ?? "",
-      slot_time:    slot?.slot_time   ?? "",
-      platform:     "Google Meet",                // not stored; sensible default
-      status:       "upcoming"        as Booking["status"], // no status column yet
+      topic: row.discussion_topic as string ?? "",
+      slot_date: slot?.slot_date ?? "",
+      slot_time: slot?.slot_time ?? "",
+      platform: "Google Meet",                // not stored; sensible default
+      status: "upcoming" as Booking["status"], // no status column yet
     };
   });
 

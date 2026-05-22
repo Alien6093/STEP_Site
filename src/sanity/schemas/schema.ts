@@ -1,9 +1,10 @@
-import { mentorSchema }    from "./mentor";
+import { mentorSchema } from "./mentor";
 import { portfolioSchema } from "./portfolio";
-import { teamSchema }      from "./team";
-import { investorSchema }  from "./investor";
+import { teamSchema } from "./team";
+import { investorSchema } from "./investor";
 import { corporateSchema } from "./corporate";
-import { partnerSchema }   from "./partner";
+import { partnerSchema } from "./partner";
+import { eventSchema } from "./event";
 
 export const schemaTypes = [
   mentorSchema,
@@ -12,4 +13,5 @@ export const schemaTypes = [
   investorSchema,
   corporateSchema,
   partnerSchema,
+  eventSchema,
 ];

@@ -1,6 +1,10 @@
 "use client";
 import { MapPin, Mail, Phone, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ObfuscatedEmail from "@/components/ui/ObfuscatedEmail";
+
+/* Base64 of "ceo@jssstepnoida.org" — plain text never appears in this file */
+const CEO_EMAIL_B64 = "Y2VvQGpzc3N0ZXBub2lkYS5vcmc=";
 
 export default function ContactSidebar() {
   return (
@@ -45,12 +49,10 @@ export default function ContactSidebar() {
               <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-1">
                 Email
               </h4>
-              <a
-                href="mailto:ceo@jssstepnoida.org"
+              <ObfuscatedEmail
+                encoded={CEO_EMAIL_B64}
                 className="text-primary hover:text-primary/80 transition-colors text-sm font-medium flex items-center"
-              >
-                ceo@jssstepnoida.org
-              </a>
+              />
             </div>
           </div>
 
