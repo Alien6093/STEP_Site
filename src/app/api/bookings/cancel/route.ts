@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
 import { rateLimit } from "@/lib/rate-limit";
+import { previewClient as sanityClient } from "@/sanity/client";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { bookingId, slotId, mentorName, mentorEmail, date, time } =
+    const { bookingId, slotId, mentorName, date, time } =
       body as Record<string, unknown>;
 
     /* UUID format guard — prevents malformed IDs reaching the DB */
@@ -86,11 +87,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /* Optional fields — safe defaults */
-    const safeMentorName  = isNonEmptyString(mentorName,  120) ? mentorName.trim()  : "Mentor";
-    const safeMentorEmail = isNonEmptyString(mentorEmail, 254) && EMAIL_RE.test(mentorEmail.trim())
-      ? mentorEmail.trim()
-      : null;
+    /* Optional display fields — safe defaults */
+    const safeMentorName = isNonEmptyString(mentorName, 120) ? mentorName.trim() : "Mentor";
     const safeDate = isNonEmptyString(date, 40) ? date.trim() : "N/A";
     const safeTime = isNonEmptyString(time, 20) ? time.trim() : "N/A";
 
@@ -148,8 +146,46 @@ export async function POST(request: NextRequest) {
       console.error("[bookings/cancel] slot re-open error:", slotError.code, slotError.message);
     }
 
-    /* ── Step 3: Email notification (non-blocking) ───────────────────── */
-    const recipientEmail = safeMentorEmail ?? ADMIN_EMAIL;
+    /* ── Step 3: Resolve mentor email server-side from Sanity ────────── */
+    /*
+     * W1 Audit Fix: mentorEmail is NO LONGER trusted from the client body.
+     * The mentor's email is fetched server-side using the mentor_sanity_id
+     * stored in the slot row that was locked in Step 1. This prevents an
+     * authenticated user from redirecting the cancellation notification to
+     * an arbitrary third-party address.
+     *
+     * We use previewClient (auth-bypassed, CDN-skipped) so the latest
+     * published mentor email is always returned — same pattern as /api/bookings.
+     *
+     * Non-fatal: if the Sanity fetch fails or the field is absent, we fall
+     * back to ADMIN_EMAIL so ops always receive the notification.
+     */
+    let resolvedMentorEmail: string | null = null;
+
+    const slotRow = await supabase
+      .from("mentor_slots")
+      .select("mentor_sanity_id")
+      .eq("id", slotId)
+      .single();
+
+    const mentorSanityId = slotRow.data?.mentor_sanity_id as string | undefined;
+
+    if (mentorSanityId) {
+      try {
+        const mentor = await sanityClient.fetch<{ email: string | null } | null>(
+          `*[_type == "mentor" && _id == $id][0]{ email }`,
+          { id: mentorSanityId },
+        );
+        if (mentor?.email && EMAIL_RE.test(mentor.email.trim())) {
+          resolvedMentorEmail = mentor.email.trim();
+        }
+      } catch (sanityErr) {
+        /* Non-fatal — fall back to ADMIN_EMAIL */
+        console.error("[bookings/cancel] Sanity mentor email fetch failed:", sanityErr);
+      }
+    }
+
+    const recipientEmail = resolvedMentorEmail ?? ADMIN_EMAIL;
 
     resend.emails
       .send({

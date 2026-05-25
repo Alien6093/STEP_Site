@@ -1,4 +1,7 @@
-export const dynamic = "force-dynamic";
+/* Audit W4: ISR — corporate listings are static marketing content, not user-specific.
+ * force-dynamic was burning a live Sanity API call on every visitor.
+ * Regenerate at most once per hour instead. */
+export const revalidate = 3600;
 
 import Image from "next/image";
 import { ExternalLink, Building2 } from "lucide-react";
@@ -23,7 +26,7 @@ interface SanityCorporate {
 
 /* ─── GROQ ────────────────────────────────────────────────────────────── */
 
-const QUERY = `*[_type == "corporate"] | order(name asc) {
+const QUERY = `*[_type == "corporate"] | order(name asc)[0...100] {
   _id, name, logo, description, websiteUrl, industry
 }`;
 
@@ -116,7 +119,7 @@ function CorporateCard({ entity }: { entity: SanityCorporate }) {
 /* ─── Page ────────────────────────────────────────────────────────────── */
 
 export default async function CorporatesPage() {
-  const corporates = await client.fetch<SanityCorporate[]>(QUERY, {}, { cache: "no-store" });
+  const corporates = await client.fetch<SanityCorporate[]>(QUERY); // inherits revalidate = 3600
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

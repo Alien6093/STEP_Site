@@ -20,7 +20,7 @@ interface SanityTeamMember {
 /* ─── GROQ ────────────────────────────────────────────────────────────── */
 
 const TEAM_QUERY = `
-  *[_type == "teamMember"] | order(order asc) {
+  *[_type == "teamMember"] | order(order asc)[0...50] {
     _id,
     name,
     role,
@@ -143,7 +143,7 @@ export default async function TeamGrid() {
   const team = await client.fetch<SanityTeamMember[]>(
     TEAM_QUERY,
     {},
-    { cache: "no-store" }
+    // Audit W3: no-store removed — inherits parent about/page.tsx revalidate = 3600
   );
 
   return (

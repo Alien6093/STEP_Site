@@ -1,4 +1,7 @@
-export const dynamic = "force-dynamic";
+/* Audit W4: ISR — partner listings are static marketing content, not user-specific.
+ * force-dynamic was burning a live Sanity API call on every visitor.
+ * Regenerate at most once per hour instead. */
+export const revalidate = 3600;
 
 import Image from "next/image";
 import { ExternalLink, Handshake } from "lucide-react";
@@ -23,7 +26,7 @@ interface SanityPartner {
 
 /* ─── GROQ ────────────────────────────────────────────────────────────── */
 
-const QUERY = `*[_type == "partner"] | order(name asc) {
+const QUERY = `*[_type == "partner"] | order(name asc)[0...100] {
   _id, name, logo, description, websiteUrl, partnerType
 }`;
 
@@ -116,7 +119,7 @@ function PartnerCard({ entity }: { entity: SanityPartner }) {
 /* ─── Page ────────────────────────────────────────────────────────────── */
 
 export default async function PartnersPage() {
-  const partners = await client.fetch<SanityPartner[]>(QUERY, {}, { cache: "no-store" });
+  const partners = await client.fetch<SanityPartner[]>(QUERY); // inherits revalidate = 3600
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

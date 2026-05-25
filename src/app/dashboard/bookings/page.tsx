@@ -2,6 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import BookingsList, { type Booking } from "@/components/dashboard/BookingsList";
 
+/* ── Cache directive ────────────────────────────────────────────────────
+ * CRITICAL (Audit C2): Force dynamic rendering on every request.
+ * Without this, Next.js may cache the RSC payload containing private
+ * booking records and serve them to a different user via CDN edge.
+ * ─────────────────────────────────────────────────────────────────────── */
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "My Bookings — JSS STEP",
 };
@@ -46,7 +53,8 @@ export default async function BookingsPage() {
       )
     `)
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(50); // Audit W4: cap payload — prevents unbounded growth as bookings accumulate
 
   if (error) {
     console.error("[bookings page] fetch error:", error instanceof Error ? error.message : JSON.stringify(error));

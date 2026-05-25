@@ -7,6 +7,45 @@ import { rateLimit } from "@/lib/rate-limit";
 const URL_RE   = /^https?:\/\/.{1,2083}$/;
 const PHONE_RE = /^[\d\s+\-().]{7,20}$/;
 
+/**
+ * Allowlisted hostnames for avatar URLs (W5 Audit Fix).
+ * Only images from trusted OAuth/CDN providers are accepted.
+ * A URL that doesn't match is coerced to null — not rejected —
+ * so the rest of the profile save still succeeds.
+ */
+const AVATAR_ALLOWED_SUFFIXES = [
+  "googleusercontent.com",   // Google OAuth avatars
+  "avatars.githubusercontent.com", // GitHub OAuth avatars
+  "licdn.com",               // LinkedIn profile pictures
+  "media.licdn.com",
+] as const;
+
+// Derive the Supabase project hostname at module load time so it is always
+// current even if the env var changes between deployments.
+const SUPABASE_HOSTNAME = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname;
+  } catch {
+    return "";
+  }
+})();
+
+function sanitizeAvatarUrl(raw: unknown): string | null {
+  if (raw === undefined || raw === null || raw === "") return null;
+  if (typeof raw !== "string" || raw.length > 2083) return null;
+  try {
+    const url = new URL(raw.trim());
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname.toLowerCase();
+    const allowed =
+      (SUPABASE_HOSTNAME && host === SUPABASE_HOSTNAME) ||
+      AVATAR_ALLOWED_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+    return allowed ? url.href : null;
+  } catch {
+    return null; // malformed URL
+  }
+}
+
 function isNonEmptyString(v: unknown, max: number): v is string {
   return typeof v === "string" && v.trim().length > 0 && v.length <= max;
 }
@@ -92,14 +131,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (avatarUrl !== undefined && avatarUrl !== null && avatarUrl !== "") {
-      if (!isNonEmptyString(avatarUrl, 2083) || !URL_RE.test((avatarUrl as string).trim())) {
-        return NextResponse.json(
-          { error: "avatarUrl must be a valid URL." },
-          { status: 400 }
-        );
-      }
-    }
+    /* avatarUrl — allowlist-validated (W5 Audit Fix)
+     * sanitizeAvatarUrl returns null for any URL that isn't https:
+     * or whose hostname isn't in the trusted provider list.
+     * We silently coerce rather than reject so the rest of the
+     * profile fields are still saved successfully.
+     */
+    const safeAvatarUrl = sanitizeAvatarUrl(avatarUrl);
 
     if (!isOptionalString(organisation, 120)) {
       return NextResponse.json(
@@ -122,7 +160,7 @@ export async function POST(request: NextRequest) {
           phone:        isNonEmptyString(phone,       20)   ? (phone as string).trim()        : null,
           linkedin_url: isNonEmptyString(linkedinUrl, 2083) ? (linkedinUrl as string).trim()  : null,
           organisation: isNonEmptyString(organisation, 120) ? (organisation as string).trim() : null,
-          avatar_url:   isNonEmptyString(avatarUrl,   2083) ? (avatarUrl as string).trim()    : null,
+          avatar_url:   safeAvatarUrl,
           updated_at:   new Date().toISOString(),
         },
         { onConflict: "id" }

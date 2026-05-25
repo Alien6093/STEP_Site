@@ -1,7 +1,7 @@
 "use client";
 
 import { SITE_CONFIG } from "@/lib/constants";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -251,7 +251,7 @@ function Step1({
           <option>Student</option>
           <option>Faculty</option>
           <option>Alumni</option>
-          <option>External Founder</option>
+          <option>Founder</option>
         </select>
       </Field>
 
@@ -325,7 +325,7 @@ function Step2({
             <option>Idea</option>
             <option>Prototype</option>
             <option>MVP</option>
-            <option>Revenue Generating</option>
+            <option>Early Revenue</option>
           </select>
         </Field>
 
@@ -674,13 +674,22 @@ function FormContent({ initialData }: { initialData?: InitialData }) {
    * Pre-select program from ?program=<slug> query parameter.
    * Must run after mount (useSearchParams is only available client-side).
    * Uses setValue so React Hook Form tracks the value correctly.
+   *
+   * Audit W6: replaced the suppressed empty-dep-array pattern with a useRef
+   * idempotency guard. hasAutoFilled.current ensures the pre-fill fires
+   * exactly once regardless of how many times the effect re-runs (e.g.
+   * React Strict Mode double-invoke, or searchParams identity changing).
    */
+  const hasAutoFilled = useRef(false);
   useEffect(() => {
+    if (hasAutoFilled.current) return;
     const slug = searchParams.get("program");
     const value = slug ? (PROGRAM_SLUG_MAP[slug] ?? "") : "";
-    if (value) setValue("program", value);
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, []); // run once on mount
+    if (value) {
+      setValue("program", value);
+      hasAutoFilled.current = true;
+    }
+  }, [searchParams, setValue]); // complete dep array — no ESLint suppression needed
 
   /* ── Locked-field flags (only lock if session actually provided a value) ── */
   const lockedFields = {

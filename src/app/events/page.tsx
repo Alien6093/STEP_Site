@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 /* ─── GROQ query ──────────────────────────────────────────────────────── */
 
 const EVENTS_QUERY = `
-  *[_type == "event"] | order(date desc) {
+  *[_type == "event"] | order(date desc)[0...100] {
     _id,
     title,
     eventType,

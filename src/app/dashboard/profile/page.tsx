@@ -2,6 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ProfileForm, { type ProfileData } from "@/components/dashboard/ProfileForm";
 
+/* ── Cache directive ────────────────────────────────────────────────────
+ * CRITICAL (Audit C1): Force dynamic rendering on every request.
+ * Without this, Next.js may implicitly cache the RSC payload for this page
+ * via the Data Cache or a CDN edge, potentially serving one user's PII
+ * (full name, phone, LinkedIn, avatar) to a different user.
+ * ─────────────────────────────────────────────────────────────────────── */
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Profile Settings — JSS STEP",
 };

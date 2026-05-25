@@ -1,4 +1,7 @@
-export const dynamic = "force-dynamic";
+/* Audit W4: ISR — investor listings are static marketing content, not user-specific.
+ * force-dynamic was burning a live Sanity API call on every visitor.
+ * Regenerate at most once per hour instead. */
+export const revalidate = 3600;
 
 import Image from "next/image";
 import { ExternalLink, TrendingUp } from "lucide-react";
@@ -23,7 +26,7 @@ interface SanityInvestor {
 
 /* ─── GROQ ────────────────────────────────────────────────────────────── */
 
-const QUERY = `*[_type == "investor"] | order(name asc) {
+const QUERY = `*[_type == "investor"] | order(name asc)[0...100] {
   _id, name, logo, description, websiteUrl, focusArea
 }`;
 
@@ -116,7 +119,7 @@ function InvestorCard({ entity }: { entity: SanityInvestor }) {
 /* ─── Page ────────────────────────────────────────────────────────────── */
 
 export default async function InvestorsPage() {
-  const investors = await client.fetch<SanityInvestor[]>(QUERY, {}, { cache: "no-store" });
+  const investors = await client.fetch<SanityInvestor[]>(QUERY); // inherits revalidate = 3600
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

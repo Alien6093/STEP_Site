@@ -21,9 +21,9 @@ export const SITE_CONFIG = {
 
     // ─── 3. Incubator Metrics (Update these as you grow) ─────────────────
     stats: {
-        startupsSupported: "300+",
-        seedFunding: "50L+",
-        successfulExits: "11+",
+        startupsSupported: "350+",
+        seedFunding: "100L+",
+        successfulExits: "17+",
         yearsOfLegacy: "20+",
     }
 };

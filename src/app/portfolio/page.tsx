@@ -32,7 +32,7 @@ export const metadata = {
 /* ─── GROQ query ──────────────────────────────────────────────────────── */
 
 const PORTFOLIO_QUERY = `
-  *[_type == "portfolio"] | order(cohortYear desc) {
+  *[_type == "portfolio"] | order(cohortYear desc)[0...200] {
     _id,
     startupName,
     "slug": slug.current,

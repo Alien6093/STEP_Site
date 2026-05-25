@@ -161,12 +161,17 @@ export default function BookingForm({
     (async () => {
       setSlotsLoading(true);
       try {
+        // Audit W5: filter to future slots only + cap at 60 rows (~10 weeks of 6 daily slots).
+        // today is derived inside the IIFE so it reflects the moment the modal opens.
+        const today = new Date().toISOString().split("T")[0];
         const { data, error } = await supabase
           .from("mentor_slots")
           .select("id, slot_date, slot_time, is_booked")
           .eq("mentor_sanity_id", mentorId)
+          .gte("slot_date", today)           // exclude past slots
           .order("slot_date", { ascending: true })
-          .order("slot_time", { ascending: true });
+          .order("slot_time", { ascending: true })
+          .limit(60);                        // cap payload
 
         if (!cancelled && !error && data) setSlots(data as MentorSlot[]);
       } finally {
@@ -276,8 +281,17 @@ export default function BookingForm({
       });
 
       if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error ?? "Booking failed.");
+        // Audit fix: wrap res.json() in try/catch — a gateway/CDN timeout (502/504)
+        // returns an HTML body, causing bare res.json() to throw SyntaxError, which
+        // would surface as "Unexpected token '<'" in the UI instead of a friendly message.
+        let errorMessage = "Booking failed. Please try again.";
+        try {
+          const json = await res.json() as { error?: string };
+          if (json.error) errorMessage = json.error;
+        } catch {
+          /* Fallback for non-JSON responses (e.g. 502/504 HTML error pages from Vercel) */
+        }
+        throw new Error(errorMessage);
       }
 
       setStep(3);

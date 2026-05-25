@@ -81,7 +81,7 @@ export default function Hero() {
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
           variants={containerVariants}
-          initial="hidden"
+          initial={false}
           animate="visible"
           className="flex flex-col items-center gap-6"
         >
@@ -151,7 +151,7 @@ export default function Hero() {
       {/* ── Scroll indicator ── */}
       <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex-col items-center gap-1 hidden sm:flex">
         <span className="text-xs text-slate-500 tracking-widest uppercase">Scroll</span>
-        <ChevronDown size={20} className="text-slate-400 animate-bounce" />
+        <ChevronDown size={20} className="text-slate-400 animate-bounce" aria-hidden="true" />
       </div>
     </section>
   );

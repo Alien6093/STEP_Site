@@ -68,7 +68,9 @@ export function saveBookingData(
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch (err) {
     // sessionStorage can throw in private browsing when storage quota is 0
-    console.warn("[useBookingCache] Could not write to sessionStorage:", err);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn("[useBookingCache] Could not write to sessionStorage:", err);
+    }
   }
 }
 
@@ -100,7 +102,9 @@ export function loadBookingData(): BookingCacheData | null {
       typeof data.discussionTopic !== "string" ||
       typeof data.savedAt !== "string"
     ) {
-      console.warn("[useBookingCache] Stored data failed shape validation — discarding.");
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn("[useBookingCache] Stored data failed shape validation — discarding.");
+      }
       clearBookingData();
       return null;
     }
@@ -109,14 +113,18 @@ export function loadBookingData(): BookingCacheData | null {
     const STALE_MS = 30 * 60 * 1000;
     const age = Date.now() - new Date(data.savedAt).getTime();
     if (age > STALE_MS) {
-      console.info("[useBookingCache] Cached data is stale — discarding.");
+      if (process.env.NODE_ENV !== 'production') {
+        console.info("[useBookingCache] Cached data is stale — discarding.");
+      }
       clearBookingData();
       return null;
     }
 
     return data;
   } catch (err) {
-    console.warn("[useBookingCache] Could not read from sessionStorage:", err);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn("[useBookingCache] Could not read from sessionStorage:", err);
+    }
     return null;
   }
 }

@@ -26,23 +26,52 @@ export default function AuthGate() {
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // W3/W4 Audit Fix: tracks whether a live session just expired mid-use.
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    /*
+     * W3 Audit Fix: replaced getSession() with getUser().
+     *
+     * getSession() reads from the local cookie/storage cache and does NOT
+     * re-validate the JWT with the Supabase Auth server. A revoked or expired
+     * token could pass this check until onAuthStateChange fires.
+     *
+     * getUser() makes a network request to Supabase Auth on every mount,
+     * eliminating the stale-cache window entirely.
+     */
+    supabase.auth.getUser().then(({ data }) => {
       if (mounted) {
-        setUser(session?.user ?? null);
+        setUser(data?.user ?? null);
         setLoading(false);
       }
     }).catch(() => {
       if (mounted) setLoading(false);
     });
 
+    /*
+     * W4 Audit Fix: detect SIGNED_OUT while the user had an active session.
+     *
+     * onAuthStateChange fires for every auth event (SIGNED_IN, SIGNED_OUT,
+     * TOKEN_REFRESHED, etc.). If we receive SIGNED_OUT while `user` is
+     * non-null, the session expired mid-fill and we set `sessionExpired`
+     * so the anon gate can display a contextual warning instead of a
+     * silent blank form wipe.
+     */
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         if (!mounted) return;
-        setUser(session?.user ?? null);
+        if (event === "SIGNED_OUT") {
+          // Only flag expiry if they were previously logged in (mid-use expiry)
+          setUser((prev) => {
+            if (prev !== null) setSessionExpired(true);
+            return null;
+          });
+        } else {
+          setUser(session?.user ?? null);
+        }
         setLoading(false);
       }
     );
@@ -73,6 +102,20 @@ export default function AuthGate() {
           className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 md:p-16
                      flex flex-col items-center text-center gap-6"
         >
+          {/* Session-expiry alert — only shown when a live session expired mid-use */}
+          {sessionExpired && (
+            <div
+              role="alert"
+              className="w-full flex items-start gap-3 px-4 py-3 rounded-xl
+                         bg-amber-50 border border-amber-200 text-left"
+            >
+              <span className="text-amber-500 text-lg leading-none mt-0.5" aria-hidden>⚠</span>
+              <p className="text-sm text-amber-800 font-medium leading-relaxed">
+                Your session expired for your security. Please log in again to continue.
+              </p>
+            </div>
+          )}
+
           {/* Lock icon */}
           <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center
                           ring-1 ring-slate-700 shadow-lg">

@@ -4,6 +4,12 @@ import Timeline from "@/components/about/Timeline";
 import Facilities from "@/components/about/Facilities";
 import TeamGrid from "@/components/about/TeamGrid";
 
+/* Audit W3: ISR — team content changes rarely; regenerate at most once per hour.
+ * This replaces the implicit no-store behaviour inherited from TeamGrid's
+ * client.fetch({ cache: "no-store" }) call, which was burning Sanity API
+ * quota on every visitor. TeamGrid's fetch now inherits this TTL instead. */
+export const revalidate = 3600;
+
 /* ─── Metadata ───────────────────────────────────────────────────────── */
 
 export const metadata: Metadata = {

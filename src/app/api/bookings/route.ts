@@ -201,10 +201,12 @@ export async function POST(request: NextRequest) {
      * mentor notification but still confirm the booking to the client.
      */
     if (!mentorEmail) {
-      console.warn(
-        `[bookings] Missing mentor email for Sanity ID: ${mentorSanityId ?? "(id not found in slot row)"
-        }. Mentor notification skipped.`,
-      );
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `[bookings] Missing mentor email for Sanity ID: ${mentorSanityId ?? "(id not found in slot row)"
+          }. Mentor notification skipped.`,
+        );
+      }
     }
 
     /* ── Task 3: Concurrent dual-email dispatch via Promise.all() ────────

@@ -15,7 +15,7 @@ export const metadata = {
 /* ─── GROQ query ──────────────────────────────────────────────────────── */
 
 const MENTORS_QUERY = `
-  *[_type == "mentor"] | order(name asc) {
+  *[_type == "mentor"] | order(name asc)[0...100] {
     _id,
     name,
     "slug": slug.current,

@@ -64,7 +64,9 @@ function parseSlotDateTime(slotDate: string, slotTime: string): Date | null {
   const timeOk = /^\d{2}:\d{2}(:\d{2})?$/.test(slotTime.trim());
 
   if (!dateOk || !timeOk) {
-    console.warn(`[timeUtils] Unexpected slot format: date="${slotDate}" time="${slotTime}"`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[timeUtils] Unexpected slot format: date="${slotDate}" time="${slotTime}"`);
+    }
     return null;
   }
 

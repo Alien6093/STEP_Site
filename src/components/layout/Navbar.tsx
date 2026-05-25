@@ -108,6 +108,7 @@ function DesktopDropdown({
         {label}
         <ChevronDown
           size={14}
+          aria-hidden="true"
           className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
@@ -175,6 +176,7 @@ function MobileAccordion({
         {label}
         <ChevronDown
           size={18}
+          aria-hidden="true"
           className={`text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
@@ -264,7 +266,9 @@ export default function Navbar() {
         }
       } catch (err) {
         /* Network timeout, missing env vars, etc. — degrade gracefully */
-        console.warn("[Navbar] getSession failed:", err);
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn("[Navbar] getSession failed:", err);
+        }
         if (isMounted) {
           setIsAuthenticated(false);
           setUser(null);
