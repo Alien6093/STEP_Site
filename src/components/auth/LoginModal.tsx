@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -220,7 +219,6 @@ function useCooldown(seconds = 60): [number, () => void] {
 /* ─── Component ─────────────────────────────────────────────────────────── */
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const router   = useRouter();
   /* Memoized so auth listeners always capture a stable client instance */
   const supabase = useMemo(() => createClient(), []);
 
@@ -347,7 +345,26 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         setError(error.message);
       } else {
         handleClose();
-        router.push("/dashboard");
+        /*
+         * ARCHITECTURAL NOTE — Hard navigation intentional.
+         *
+         * We bypass router.push() here to prevent React Error #310 in production.
+         *
+         * Root cause: supabase.auth.verifyOtp() sets the auth cookie
+         * asynchronously. If we call router.push() immediately after, the
+         * Next.js App Router fires an RSC fetch for /dashboard before the
+         * browser has committed the Set-Cookie header to the document.
+         * The server sees no session → issues a redirect() → the simultaneous
+         * client-side push + server-side redirect corrupts React's internal
+         * hook call order (minified Error #310: "Rendered more hooks than
+         * during the previous render").
+         *
+         * window.location.href forces a full HTTP round-trip. The browser
+         * attaches all cookies (including the freshly set Supabase token) to
+         * the new request's headers before it leaves the client, so the server
+         * always sees a valid session on the first /dashboard fetch.
+         */
+        window.location.href = "/dashboard";
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Verification failed.");
