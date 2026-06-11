@@ -12,7 +12,12 @@ const resend = new Resend(process.env.RESEND_API_KEY!);
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
 const FROM = process.env.FROM_ADDRESS ?? "JSS STEP <noreply@jss-step.in>";
-const OPS_TO = process.env.OPS_EMAIL ?? "info@jssstepnoida.org";
+// Admin recipients parsed from ADMIN_EMAILS env var (comma-separated).
+// Falls back to [] if the variable is absent — prevents .split() crash.
+const adminEmails = (process.env.ADMIN_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean);
 const BUCKET = "pitch_decks";
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -330,37 +335,44 @@ export async function POST(request: NextRequest) {
           console.error("[applications] applicant confirmation email failed:", err)
         ),
 
-      /* Email 2 — Internal ops briefing */
-      resend.emails
-        .send({
-          from: FROM,
-          to: OPS_TO,
-          subject: `New Application: ${userName} — ${startupName!.trim()} (${program!.trim()})`,
-          react: React.createElement(ApplicationInternalNotificationEmail, {
-            applicantName: userName,
-            email: founderEmail,
-            phone: phone!.trim(),
-            linkedin,
-            affiliation: affiliation!.trim(),
-            orgName: orgName!.trim(),
-            startupName: startupName!.trim(),
-            targetMarket,
-            teamSize,
-            stage: stage!.trim(),
-            sector: sector!.trim(),
-            isRegistered,
-            problemStatement: problemStatement!.trim(),
-            proposedSolution: proposedSolution!.trim(),
-            program: program!.trim(),
-            existingFunding,
-            heardFrom,
-            additionalInfo,
-            submittedAt,
-          }),
-        })
-        .catch((err) =>
-          console.error("[applications] internal notification email failed:", err)
-        ),
+      /* Email 2 — Internal ops briefing (only if recipients are configured) */
+      adminEmails.length === 0
+        ? Promise.resolve(
+            console.warn(
+              "[applications] ADMIN_EMAILS env var is empty. " +
+              "Skipping internal notification to prevent Resend API crash."
+            )
+          )
+        : resend.emails
+            .send({
+              from: FROM,
+              to: adminEmails,
+              subject: `New Application: ${userName} — ${startupName!.trim()} (${program!.trim()})`,
+              react: React.createElement(ApplicationInternalNotificationEmail, {
+                applicantName: userName,
+                email: founderEmail,
+                phone: phone!.trim(),
+                linkedin,
+                affiliation: affiliation!.trim(),
+                orgName: orgName!.trim(),
+                startupName: startupName!.trim(),
+                targetMarket,
+                teamSize,
+                stage: stage!.trim(),
+                sector: sector!.trim(),
+                isRegistered,
+                problemStatement: problemStatement!.trim(),
+                proposedSolution: proposedSolution!.trim(),
+                program: program!.trim(),
+                existingFunding,
+                heardFrom,
+                additionalInfo,
+                submittedAt,
+              }),
+            })
+            .catch((err) =>
+              console.error("[applications] internal notification email failed:", err)
+            ),
 
     ]);
 
