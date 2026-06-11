@@ -1,8 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-// 🔒 Hardcoded Admin List (Add your co-founders here too)
-const ADMIN_EMAILS = ["alien.adi24@gmail.com" , "deviloffers.service@gmail.com"]; 
+// 🔒 Admin list sourced from environment — never hardcoded in source.
+// ADMIN_EMAILS="a@example.com, b@example.com" (comma-separated, set in .env.local / hosting secrets)
+const adminEmails = (process.env.ADMIN_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 export default async function AdminLayout({
   children,
@@ -18,7 +22,7 @@ export default async function AdminLayout({
   }
 
   // Guard 2: Logged in, but NOT an admin
-  if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
+  if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
     redirect("/dashboard/profile"); 
   }
 
